@@ -2,12 +2,11 @@ module Main exposing (main)
 
 import Browser
 import Html exposing (Html, div, math)
-
-
---import Html.Attributes as Attr
-
+import Html.Attributes as Attr
+import Html.Events exposing (onClick)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
+import Animation
 
 
 main =
@@ -20,33 +19,69 @@ main =
 
 
 type alias Model =
-    { style : String
+    { style : Animation.State
     }
-
-
-type Msg
-    = A
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( Model ""
+    ( { style =
+            Animation.style [ Animation.opacity 1.0 ]
+      }
     , Cmd.none
     )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Animation.subscription Animate [ model.style ]
+
+
+type Msg
+    = FadeInFadeOut
+    | Animate Animation.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        A ->
-            ( { style = "" }, Cmd.none )
+        FadeInFadeOut ->
+            ( { model
+                | style =
+                    Animation.interrupt
+                        [ Animation.to
+                            [ Animation.opacity 0
+                            ]
+                        , Animation.to
+                            [ Animation.opacity 1
+                            ]
+                        ]
+                        model.style
+              }
+            , Cmd.none
+            )
+
+        Animate animMsg ->
+            ( { model | style = Animation.update animMsg model.style }
+            , Cmd.none
+            )
 
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ mainCanvas
-        ]
+    div
+        (Animation.render model.style
+            ++ [ onClick FadeInFadeOut
+               , Attr.style "position" "relative"
+               , Attr.style "margin" "100px auto"
+               , Attr.style "padding" "25px"
+               , Attr.style "width" "200px"
+               , Attr.style "height" "200px"
+               , Attr.style "background-color" "#268bd2"
+               , Attr.style "color" "white"
+               ]
+        )
+        [ text "Click to animate!" ]
 
 
 mainCanvas : Html.Html msg
@@ -64,8 +99,3 @@ mainCanvas =
                 ]
             ]
         ]
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
