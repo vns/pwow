@@ -10,6 +10,15 @@ import Svg exposing (..)
 import Svg.Attributes exposing (..)
 
 
+main =
+    Browser.element
+        { init = init
+        , update = update
+        , subscriptions = subscriptions
+        , view = view
+        }
+
+
 type alias Model =
     { style : String
     }
@@ -19,16 +28,18 @@ type Msg
     = A
 
 
-initialModel : Model
-initialModel =
-    { style = "" }
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( Model ""
+    , Cmd.none
+    )
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         A ->
-            { style = "" }
+            ( { style = "" }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -55,9 +66,6 @@ mainCanvas =
         ]
 
 
-main =
-    Browser.sandbox
-        { init = initialModel
-        , view = view
-        , update = update
-        }
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
