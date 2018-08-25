@@ -9,6 +9,7 @@ import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Animation
 import Debug
+import List exposing (map)
 
 
 main =
@@ -75,28 +76,61 @@ type Msg
     | Step3
 
 
+rotate90 ( x, y ) =
+    ( -y, x )
+
+
+translate ( px, py ) ( x, y ) =
+    ( x + px, y + py )
+
+
+initialTria =
+    [ ( 0, 0 ), ( 500, 0 ), ( 0, 200 ) ]
+
+
+triaAnim color points =
+    [ Animation.points points
+    , Animation.fill color
+    ]
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Step1 ->
             let
+                tria1 =
+                    initialTria
+
                 newTria1Style =
-                    tria 500 200 darkYellow
+                    triaAnim darkYellow tria1
+
+                tria2 =
+                    tria1
+                        |> map rotate90
+                        |> map (translate ( 700, 0 ))
 
                 newTria2Style =
-                    [ Animation.points [ ( 500, 0 ), ( 700, 0 ), ( 700, 500 ) ]
-                    , Animation.fill purple
-                    ]
+                    triaAnim purple tria2
+
+                tria3 =
+                    tria1
+                        |> map rotate90
+                        |> map rotate90
+                        |> map (translate ( 700, 700 ))
 
                 newTria3Style =
-                    [ Animation.points [ ( 700, 500 ), ( 700, 700 ), ( 200, 700 ) ]
-                    , Animation.fill darkYellow
-                    ]
+                    triaAnim darkYellow tria3
+
+                tria4 =
+                    tria1
+                        |> map rotate90
+                        |> map rotate90
+                        |> map rotate90
+                        |> map (translate ( 0, 700 ))
 
                 newTria4Style =
-                    [ Animation.points [ ( 200, 700 ), ( 0, 700 ), ( 0, 200 ) ]
-                    , Animation.fill purple
-                    ]
+                    triaAnim purple tria4
 
                 oldLabels =
                     model.labels
@@ -123,20 +157,78 @@ update msg model =
                     , Animation.fill purple
                     ]
 
+                newTria2Style =
+                    [ Animation.points [ ( 500, 0 ), ( 700, 0 ), ( 700, 500 ) ]
+                    , Animation.fill purple
+                    ]
+
+                newTria3Style =
+                    [ Animation.points [ ( 700, 500 ), ( 700, 700 ), ( 200, 700 ) ]
+                    , Animation.fill darkYellow
+                    ]
+
                 newTria4Style =
                     [ Animation.points [ ( 200, 500 ), ( 700, 500 ), ( 200, 700 ) ]
                     , Animation.fill darkYellow
                     ]
+
+                oldLabels =
+                    model.labels
+
+                newLabels =
+                    { oldLabels
+                        | csq = Animation.interrupt [ Animation.set [ Animation.display Animation.none ] ] oldLabels.csq
+                    }
             in
                 ( { model
                     | tria1 = Animation.interrupt [ Animation.to newTria1Style ] model.tria1
+                    , tria2 = Animation.interrupt [ Animation.to newTria2Style ] model.tria2
+                    , tria3 = Animation.interrupt [ Animation.to newTria3Style ] model.tria3
                     , tria4 = Animation.interrupt [ Animation.to newTria4Style ] model.tria4
+                    , labels = newLabels
                   }
                 , Cmd.none
                 )
 
         Step3 ->
-            ( model, Cmd.none )
+            let
+                newTria1Style =
+                    [ Animation.points [ ( 500, 0 ), ( 500, 500 ), ( 700, 500 ) ]
+                    , Animation.fill purple
+                    ]
+
+                newTria2Style =
+                    [ Animation.points [ ( 500, 0 ), ( 700, 0 ), ( 700, 500 ) ]
+                    , Animation.fill purple
+                    ]
+
+                newTria4Style =
+                    [ Animation.points [ ( 0, 500 ), ( 500, 500 ), ( 0, 700 ) ]
+                    , Animation.fill darkYellow
+                    ]
+
+                newTria3Style =
+                    [ Animation.points [ ( 500, 500 ), ( 500, 700 ), ( 0, 700 ) ]
+                    , Animation.fill darkYellow
+                    ]
+
+                oldLabels =
+                    model.labels
+
+                newLabels =
+                    { oldLabels
+                        | csq = Animation.interrupt [ Animation.set [ Animation.display Animation.none ] ] oldLabels.csq
+                    }
+            in
+                ( { model
+                    | tria1 = Animation.interrupt [ Animation.to newTria1Style ] model.tria1
+                    , tria2 = Animation.interrupt [ Animation.to newTria2Style ] model.tria2
+                    , tria3 = Animation.interrupt [ Animation.to newTria3Style ] model.tria3
+                    , tria4 = Animation.interrupt [ Animation.to newTria4Style ] model.tria4
+                    , labels = newLabels
+                  }
+                , Cmd.none
+                )
 
         Animate time ->
             let
@@ -221,8 +313,8 @@ mainCanvas model =
 squared attrList letter =
     text_ attrList
         [ tspan
-            [ fontSize "25" ]
+            [ fontSize "35" ]
             [ text letter
-            , tspan [ dy "-10", fontSize "15" ] [ text "2" ]
+            , tspan [ dy "-10", fontSize "20" ] [ text "2" ]
             ]
         ]
