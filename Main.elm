@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Color.Palette exposing (darkYellow, purple)
 import Html exposing (Html, div, h1)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
@@ -54,15 +55,19 @@ polygons : List (List Animation.Property)
 polygons =
     [ [ Animation.points
             [ ( 0, 0 ), ( 400, 0 ), ( 0, 300 ) ]
+      , Animation.fill darkYellow
       ]
     , [ Animation.points
             [ ( 400, 0 ), ( 700, 0 ), ( 700, 400 ) ]
+      , Animation.fill purple
       ]
     , [ Animation.points
             [ ( 700, 400 ), ( 700, 700 ), ( 300, 700 ) ]
+      , Animation.fill darkYellow
       ]
     , [ Animation.points
             [ ( 300, 700 ), ( 0, 700 ), ( 0, 300 ) ]
+      , Animation.fill purple
       ]
     ]
 
