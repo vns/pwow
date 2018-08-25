@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Browser
-import Html exposing (Html, div, math)
+import Html exposing (Html, div, h1)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Svg exposing (..)
@@ -19,14 +19,14 @@ main =
 
 
 type alias Model =
-    { style : Animation.State
+    { styles : List Animation.State
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { style =
-            Animation.style [ Animation.opacity 1.0 ]
+    ( { styles =
+            List.map Animation.style polygons
       }
     , Cmd.none
     )
@@ -34,68 +34,65 @@ init _ =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Animation.subscription Animate [ model.style ]
+    Animation.subscription Animate model.styles
 
 
 type Msg
-    = FadeInFadeOut
-    | Animate Animation.Msg
+    = Animate Animation.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        FadeInFadeOut ->
-            ( { model
-                | style =
-                    Animation.interrupt
-                        [ Animation.to
-                            [ Animation.opacity 0
-                            ]
-                        , Animation.to
-                            [ Animation.opacity 1
-                            ]
-                        ]
-                        model.style
-              }
+        Animate time ->
+            ( { model | styles = List.map (Animation.update time) model.styles }
             , Cmd.none
             )
 
-        Animate animMsg ->
-            ( { model | style = Animation.update animMsg model.style }
-            , Cmd.none
-            )
+
+polygons : List (List Animation.Property)
+polygons =
+    [ [ Animation.points
+            [ ( 0, 0 ), ( 400, 0 ), ( 0, 300 ) ]
+      ]
+    , [ Animation.points
+            [ ( 400, 0 ), ( 700, 0 ), ( 700, 400 ) ]
+      ]
+    , [ Animation.points
+            [ ( 700, 400 ), ( 700, 700 ), ( 300, 700 ) ]
+      ]
+    , [ Animation.points
+            [ ( 300, 700 ), ( 0, 700 ), ( 0, 300 ) ]
+      ]
+    ]
 
 
 view : Model -> Html Msg
 view model =
     div
-        (Animation.render model.style
-            ++ [ onClick FadeInFadeOut
-               , Attr.style "position" "relative"
-               , Attr.style "margin" "100px auto"
-               , Attr.style "padding" "25px"
-               , Attr.style "width" "200px"
-               , Attr.style "height" "200px"
-               , Attr.style "background-color" "#268bd2"
-               , Attr.style "color" "white"
-               ]
-        )
-        [ text "Click to animate!" ]
+        [ Attr.style "margin" "200px auto"
+        , Attr.style "width" "700px"
+        , Attr.style "height" "750px"
+        , Attr.style "cursor" "pointer"
+        ]
+        [ h1 [] [ text "Click to begin!" ]
+        , mainCanvas model
+        ]
 
 
-mainCanvas : Html.Html msg
-mainCanvas =
+mainCanvas : Model -> Html.Html msg
+mainCanvas model =
     svg
         [ version "1.1", width "700", height "750", viewBox "0 0 700 750" ]
-        [ polygon [ points "0,0 400,0 0,300", fill "red" ] []
-        , polygon [ points "400,0 700,0 700,400", fill "blue" ] []
-        , polygon [ points "700,400 700,700 300,700", fill "red" ] []
-        , polygon [ points "300,700 0,700 0,300", fill "blue" ] []
-        , text_ [ x "25", y "725", fill "green" ]
-            [ tspan [ fontSize "25" ]
-                [ text "a"
-                , tspan [ dy "-10", fontSize "15" ] [ text "2" ]
-                ]
+        [ g [] (List.map (\poly -> polygon (Animation.render poly) []) model.styles)
+        ]
+
+
+squared attrList letter =
+    text_ attrList
+        [ tspan
+            [ fontSize "25" ]
+            [ text letter
+            , tspan [ dy "-10", fontSize "15" ] [ text "2" ]
             ]
         ]
