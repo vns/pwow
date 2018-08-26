@@ -39,8 +39,10 @@ init _ =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Anim.subscription Animate
-        [ model.foo ]
+    Sub.batch
+        [ Anim.subscription Animate
+            [ model.foo ]
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -73,6 +75,19 @@ type alias Vector =
     Point
 
 
+type alias Line =
+    { start : Point
+    , end : Point
+    }
+
+
+type alias Equilateral =
+    { a : Point
+    , b : Point
+    , c : Point
+    }
+
+
 dot : Vector -> Vector -> Float
 dot v1 v2 =
     v1.x * v2.x + v1.y * v2.y
@@ -88,19 +103,19 @@ norm v =
     { x = v.x / (sqrt (dot v v)), y = v.y / (sqrt (dot v v)) }
 
 
-proj : Point -> Point -> Point -> Point
-proj e1 e2 p =
+projection : Line -> Point -> Point
+projection line point =
     let
         v =
-            vector e1 e2
+            vector line.start line.end
 
         x =
-            vector p e2
+            vector point line.end
 
         c =
             (dot x v) / (dot v v)
     in
-        { x = e2.x + c * v.x, y = e2.y + c * v.y }
+        { x = line.end.x + c * v.x, y = line.end.y + c * v.y }
 
 
 dist : Point -> Point -> Float
@@ -115,63 +130,200 @@ dist p1 p2 =
         sqrt (dx * dx + dy * dy)
 
 
-equilateral : Point -> Point -> Point -> List Point
-equilateral p e1 e2 =
+equilateral : Line -> Point -> Equilateral
+equilateral line point =
     let
-        pr =
-            proj e1 e2 p
+        proj =
+            projection line point
 
         halfSide =
-            dist pr p
+            dist proj point
                 |> (*) (tan (degrees 30))
 
         u =
-            vector pr e2
+            vector proj line.end
                 |> norm
     in
-        [ p
-        , { x = pr.x + u.x * halfSide, y = pr.y + u.y * halfSide }
-        , { x = pr.x - u.x * halfSide, y = pr.y - u.y * halfSide }
-        ]
+        { c = point
+        , b = { x = proj.x + u.x * halfSide, y = proj.y + u.y * halfSide }
+        , a = { x = proj.x - u.x * halfSide, y = proj.y - u.y * halfSide }
+        }
+
+
+equilateralFromLine : Line -> Equilateral
+equilateralFromLine { start, end } =
+    let
+        normal =
+            vector start end
+                |> norm
+                |> Debug.log "norm"
+
+        side =
+            dist start end
+                |> Debug.log "side"
+
+        height =
+            (sqrt (side * side - (side * side) / 4))
+                |> Debug.log "height"
+
+        centerX =
+            (if start.x > end.x then
+                end.x + (start.x - end.x) / 2
+             else if start.x < end.x then
+                start.x + (end.x - start.x) / 2
+             else
+                start.x
+            )
+                |> Debug.log "centerX"
+
+        centerY =
+            (if start.y > end.y then
+                end.y + (start.y - end.y) / 2
+             else if start.y < end.y then
+                start.y + (end.y - start.y) / 2
+             else
+                start.y
+            )
+                |> Debug.log "centerY"
+
+        apex =
+            { x = centerX - height * normal.y
+            , y = centerY + height * normal.x
+            }
+                |> Debug.log "apex"
+    in
+        { a = start, b = end, c = apex }
+
+
+equilateralAsString : Equilateral -> String
+equilateralAsString eq =
+    String.fromFloat (eq.a.x)
+        ++ ","
+        ++ String.fromFloat (eq.a.y)
+        ++ " "
+        ++ String.fromFloat (eq.b.x)
+        ++ ","
+        ++ String.fromFloat (eq.b.y)
+        ++ " "
+        ++ String.fromFloat (eq.c.x)
+        ++ ","
+        ++ String.fromFloat (eq.c.y)
+        ++ " "
 
 
 mainCanvas : Model -> Html Msg
 mainCanvas model =
     let
         aPoint =
-            { x = 40, y = 70 }
-
-        prRight =
-            proj { x = 50, y = 15 } { x = 100, y = 100 } aPoint
-
-        prDown =
-            proj { x = 0, y = 100 } { x = 100, y = 100 } aPoint
+            { x = 300, y = 400 }
 
         v1 =
-            { x = 50, y = 15 }
+            { x = 10, y = 740 }
 
         v2 =
-            { x = 0, y = 100 }
+            { x = 740, y = 740 }
 
-        equi =
-            equilateral aPoint v1 v2
-                |> map (\p -> String.fromFloat (p.x) ++ "," ++ String.fromFloat (p.y))
-                |> String.join " "
+        eq =
+            equilateralFromLine { start = v1, end = v2 }
+
+        eqBC =
+            equilateral { start = eq.b, end = eq.c } aPoint
+                |> Debug.log "BC"
+
+        eqAC =
+            equilateral { start = eq.a, end = eq.c } aPoint
+                |> Debug.log "AC"
+
+        eqUpper =
+            equilateral { start = eqAC.b, end = eqBC.b } eq.c
+
+        -- Test things
+        half =
+            (eqBC.b.x - eqAC.b.x) / 2
+
+        x =
+            half * (tan (degrees 30))
+
+        centerX =
+            eqAC.b.x + half
+
+        centerY =
+            eqAC.b.y
+
+        normal =
+            vector eqAC.b eqBC.b |> norm
+
+        origin =
+            { x = centerX - x * normal.y
+            , y = centerY + x * normal.x
+            }
+
+        originAsString =
+            "transform-origin: " ++ String.fromFloat (origin.x) ++ "px " ++ String.fromFloat (origin.y) ++ "px"
+
+        eqAB =
+            equilateral { start = eq.a, end = eq.b } aPoint
 
         prLeft =
-            proj v1 v2 aPoint
+            projection { start = eq.a, end = eq.c } aPoint
     in
         div []
             [ svg
-                [ version "1.1", width "700", height "700", viewBox "0 0 150 150" ]
-                [ g [ transform "translate(25,25)" ]
-                    [ polygon [ points "50,15 100,100 0,100", fill "none", stroke "black", strokeWidth "0.2" ] []
-                    , line [ x1 "50", y1 "15", x2 "50", y2 "100", stroke "blue", strokeWidth "0.1" ] []
-                    , circle [ cx "40", cy "70", r "0.5", fill "black" ] []
-                    , circle [ cx (String.fromFloat prLeft.x), cy (String.fromFloat prLeft.y), r "0.5", fill "black" ] []
-                    , circle [ cx (String.fromFloat prRight.x), cy (String.fromFloat prRight.y), r "0.5", fill "black" ] []
-                    , circle [ cx (String.fromFloat prDown.x), cy (String.fromFloat prDown.y), r "0.5", fill "black" ] []
-                    , polygon [ points equi, fill "none", strokeWidth "0.2", stroke "black" ] []
+                [ version "1.1", width "750", height "750", viewBox "0 0 750 750" ]
+                [ g []
+                    [ circle
+                        [ cx (String.fromFloat aPoint.x)
+                        , cy (String.fromFloat aPoint.y)
+                        , r "2"
+                        , fill "black"
+                        ]
+                        []
+                    , circle
+                        [ cx (String.fromFloat origin.x)
+                        , cy (String.fromFloat origin.y)
+                        , r "2"
+                        , fill "black"
+                        ]
+                        []
+                    , polygon
+                        [ points (equilateralAsString eq)
+                        , fill "none"
+                        , strokeWidth "1"
+                        , stroke "black"
+                        ]
+                        []
+                    , polygon
+                        [ points (equilateralAsString (equilateral { start = eq.a, end = eq.b } aPoint))
+                        , fill "none"
+                        , strokeWidth "1"
+                        , stroke "black"
+                        ]
+                        []
+                    , g []
+                        [ g [ Svg.Attributes.style originAsString, transform "rotate(-120)" ]
+                            [ polygon
+                                [ points (equilateralAsString (equilateral { start = eq.a, end = eq.c } aPoint))
+                                , fill "none"
+                                , strokeWidth "1"
+                                , stroke "black"
+                                ]
+                                []
+                            , polygon
+                                [ points (equilateralAsString (equilateral { start = eq.b, end = eq.c } aPoint))
+                                , fill "none"
+                                , strokeWidth "1"
+                                , stroke "black"
+                                ]
+                                []
+                            , polygon
+                                [ points (equilateralAsString eqUpper)
+                                , fill "none"
+                                , strokeWidth "1"
+                                , stroke "black"
+                                ]
+                                []
+                            ]
+                        ]
                     ]
                 ]
             ]
