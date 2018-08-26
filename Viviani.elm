@@ -93,9 +93,9 @@ dot v1 v2 =
     v1.x * v2.x + v1.y * v2.y
 
 
-vector : Point -> Point -> Vector
-vector e1 e2 =
-    { x = e1.x - e2.x, y = e1.y - e2.y }
+vectorFromLine : Line -> Vector
+vectorFromLine { end, start } =
+    { x = end.x - start.x, y = end.y - start.y }
 
 
 norm : Vector -> Vector
@@ -107,15 +107,15 @@ projection : Line -> Point -> Point
 projection line point =
     let
         v =
-            vector line.start line.end
+            vectorFromLine line
 
         x =
-            vector point line.end
+            vectorFromLine { end = point, start = line.start }
 
         c =
             (dot x v) / (dot v v)
     in
-        { x = line.end.x + c * v.x, y = line.end.y + c * v.y }
+        { x = line.start.x + c * v.x, y = line.start.y + c * v.y }
 
 
 dist : Point -> Point -> Float
@@ -141,7 +141,7 @@ equilateral line point =
                 |> (*) (tan (degrees 30))
 
         u =
-            vector proj line.end
+            vectorFromLine { end = proj, start = line.start }
                 |> norm
     in
         { c = point
@@ -150,22 +150,9 @@ equilateral line point =
         }
 
 
-equilateralFromLine : Line -> Equilateral
-equilateralFromLine { start, end } =
+lineCenter : Line -> Point
+lineCenter { start, end } =
     let
-        normal =
-            vector start end
-                |> norm
-                |> Debug.log "norm"
-
-        side =
-            dist start end
-                |> Debug.log "side"
-
-        height =
-            (sqrt (side * side - (side * side) / 4))
-                |> Debug.log "height"
-
         centerX =
             (if start.x > end.x then
                 end.x + (start.x - end.x) / 2
@@ -185,14 +172,58 @@ equilateralFromLine { start, end } =
                 start.y
             )
                 |> Debug.log "centerY"
+    in
+        { x = centerX, y = centerY }
+
+
+
+-- Apex is left of line direction
+
+
+equilateralFromLine : Line -> Equilateral
+equilateralFromLine line =
+    let
+        normal =
+            vectorFromLine line
+                -- normalize
+                |> norm
+                -- rotate 90 degrees counter-clockwise
+                |> \{ x, y } -> { x = y, y = -x }
+
+        side =
+            dist line.start line.end
+                |> Debug.log "side"
+
+        height =
+            (sqrt (side * side - (side * side) / 4))
+
+        center =
+            lineCenter line
 
         apex =
-            { x = centerX - height * normal.y
-            , y = centerY + height * normal.x
+            { x = center.x + height * normal.x
+            , y = center.y + height * normal.y
             }
-                |> Debug.log "apex"
     in
-        { a = start, b = end, c = apex }
+        { a = line.start, b = line.end, c = apex }
+
+
+equilateralCenter : Equilateral -> Point
+equilateralCenter eq =
+    let
+        half =
+            (dist eq.a eq.b) / 2
+
+        proj =
+            projection { start = eq.a, end = eq.b } eq.c
+
+        offset =
+            half * (tan (degrees 30))
+
+        normal =
+            vectorFromLine { start = proj, end = eq.c } |> norm
+    in
+        { x = proj.x + offset * normal.x, y = proj.y + offset * normal.y }
 
 
 equilateralAsString : Equilateral -> String
@@ -230,33 +261,18 @@ mainCanvas model =
             equilateral { start = eq.b, end = eq.c } aPoint
                 |> Debug.log "BC"
 
+        centerBC =
+            equilateralCenter eqBC
+
         eqAC =
             equilateral { start = eq.a, end = eq.c } aPoint
                 |> Debug.log "AC"
 
         eqUpper =
-            equilateral { start = eqAC.b, end = eqBC.b } eq.c
-
-        -- Test things
-        half =
-            (eqBC.b.x - eqAC.b.x) / 2
-
-        x =
-            half * (tan (degrees 30))
-
-        centerX =
-            eqAC.b.x + half
-
-        centerY =
-            eqAC.b.y
-
-        normal =
-            vector eqAC.b eqBC.b |> norm
+            equilateral { start = eqAC.a, end = eqBC.a } eq.c
 
         origin =
-            { x = centerX - x * normal.y
-            , y = centerY + x * normal.x
-            }
+            equilateralCenter eqUpper
 
         originAsString =
             "transform-origin: " ++ String.fromFloat (origin.x) ++ "px " ++ String.fromFloat (origin.y) ++ "px"
@@ -285,6 +301,13 @@ mainCanvas model =
                         , fill "black"
                         ]
                         []
+                    , circle
+                        [ cx (String.fromFloat centerBC.x)
+                        , cy (String.fromFloat centerBC.y)
+                        , r "2"
+                        , fill "black"
+                        ]
+                        []
                     , polygon
                         [ points (equilateralAsString eq)
                         , fill "none"
@@ -300,7 +323,9 @@ mainCanvas model =
                         ]
                         []
                     , g []
-                        [ g [ Svg.Attributes.style originAsString, transform "rotate(-120)" ]
+                        [ g
+                            -- [ Svg.Attributes.style originAsString, transform "rotate(-120)" ]
+                            []
                             [ polygon
                                 [ points (equilateralAsString (equilateral { start = eq.a, end = eq.c } aPoint))
                                 , fill "none"
