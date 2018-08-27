@@ -9,6 +9,7 @@ import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Animation as Anim
 import List exposing (map, range)
+import Json.Decode as Decode
 import Debug
 
 
@@ -34,6 +35,7 @@ type Msg
     = Step1
     | Step2
     | Step3
+    | MouseClick Point
     | Animate Anim.Msg
 
 
@@ -66,12 +68,10 @@ initEquilateral =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Anim.subscription Animate
-            [ model.scene
-            , model.rotation1
-            , model.rotation2
-            ]
+    Anim.subscription Animate
+        [ model.scene
+        , model.rotation1
+        , model.rotation2
         ]
 
 
@@ -147,6 +147,15 @@ update msg model =
                 , Cmd.none
                 )
 
+        MouseClick clickedPoint ->
+            let
+                _ =
+                    clickedPoint |> Debug.log "mouseClick"
+            in
+                ( { model | aPoint = clickedPoint }
+                , Cmd.none
+                )
+
         Animate animMsg ->
             ( { model
                 | scene = Anim.update animMsg model.scene
@@ -169,8 +178,26 @@ view model =
             , span [ onClick Step2, Attr.style "margin-right" "30px" ] [ text "Step 2" ]
             , span [ onClick Step3, Attr.style "margin-right" "30px" ] [ text "Step 3" ]
             ]
-        , mainCanvas model
+        , div
+            []
+            [ mainCanvas model ]
         ]
+
+
+onClickWithOffset : (Point -> msg) -> Attribute msg
+onClickWithOffset message =
+    Html.Events.on "click"
+        (Decode.map
+            message
+            pointDecoder
+        )
+
+
+pointDecoder : Decode.Decoder Point
+pointDecoder =
+    Decode.map2 Point
+        (Decode.field "offsetX" Decode.float)
+        (Decode.field "offsetY" Decode.float)
 
 
 type alias Point =
@@ -385,7 +412,7 @@ mainCanvas model =
     in
         div []
             [ svg
-                [ version "1.1", width "750", height "750", viewBox "0 0 750 750" ]
+                [ version "1.1", width "750", height "750", viewBox "0 0 750 750", onClickWithOffset MouseClick ]
                 [ g []
                     [ circle
                         [ cx (String.fromFloat aPoint.x)
