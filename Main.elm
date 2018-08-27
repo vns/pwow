@@ -8,9 +8,7 @@ import Html.Events exposing (onClick)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Animation as Anim
-import Debug
 import List exposing (map, range)
-import Time
 
 
 main =
@@ -139,11 +137,9 @@ update msg model =
 
                 newLabels =
                     { oldLabels
-                        | csq =
-                            Anim.interrupt
-                                [ Anim.set [ Anim.display Anim.block ]
-                                ]
-                                oldLabels.csq
+                        | csq = Anim.interrupt [ Anim.set [ Anim.display Anim.block ] ] oldLabels.csq
+                        , asq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.asq
+                        , bsq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.bsq
                     }
             in
                 ( { model
