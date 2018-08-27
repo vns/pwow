@@ -280,8 +280,9 @@ mainCanvas model =
         eqAB =
             equilateral { start = eq.a, end = eq.b } aPoint
 
-        prLeft =
-            projection { start = eq.a, end = eq.c } aPoint
+        prAB =
+            projection { start = eq.a, end = eq.b } aPoint
+                |> Debug.log "prAB"
     in
         div []
             [ svg
@@ -315,26 +316,38 @@ mainCanvas model =
                         , stroke "black"
                         ]
                         []
-                    , polygon
-                        [ points (equilateralAsString (equilateral { start = eq.a, end = eq.b } aPoint))
-                        , fill "none"
-                        , strokeWidth "1"
-                        , stroke "black"
-                        ]
+                    , g
                         []
+                        [ polygon
+                            [ points (equilateralAsString eqAB)
+                            , fill "none"
+                            , strokeWidth "1"
+                            , stroke "black"
+                            ]
+                            []
+                        , line
+                            [ x1 (String.fromFloat aPoint.x)
+                            , y1 (String.fromFloat aPoint.y)
+                            , x2 (String.fromFloat prAB.x)
+                            , y2 (String.fromFloat prAB.y)
+                            , strokeWidth "1"
+                            , stroke "blue"
+                            ]
+                            []
+                        ]
                     , g []
                         [ g
                             -- [ Svg.Attributes.style originAsString, transform "rotate(-120)" ]
                             []
                             [ polygon
-                                [ points (equilateralAsString (equilateral { start = eq.a, end = eq.c } aPoint))
+                                [ points (equilateralAsString eqAC)
                                 , fill "none"
                                 , strokeWidth "1"
                                 , stroke "black"
                                 ]
                                 []
                             , polygon
-                                [ points (equilateralAsString (equilateral { start = eq.b, end = eq.c } aPoint))
+                                [ points (equilateralAsString eqBC)
                                 , fill "none"
                                 , strokeWidth "1"
                                 , stroke "black"
