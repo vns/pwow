@@ -22,34 +22,66 @@ main =
 
 
 type alias Model =
-    { foo : Anim.State
+    { eq : Equilateral
+    , aPoint : Point
+    , scene : Anim.State
     }
 
 
 type Msg
-    = Animate Anim.Msg
+    = Step1
+    | Animate Anim.Msg
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { foo = Anim.style [ Anim.fill white ] }
-    , Cmd.none
-    )
+    let
+        aPoint =
+            { x = 300, y = 400 }
+
+        eq =
+            initEquilateral
+    in
+        ( { eq = eq
+          , aPoint = aPoint
+          , scene = Anim.style [ Anim.opacity 0 ]
+          }
+        , Cmd.none
+        )
+
+
+initEquilateral : Equilateral
+initEquilateral =
+    equilateralFromLine
+        { start = { x = 10, y = 740 }
+        , end = { x = 740, y = 740 }
+        }
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Anim.subscription Animate
-            [ model.foo ]
+            [ model.scene ]
         ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Step1 ->
+            ( { model
+                | scene = Anim.interrupt [ Anim.to [ Anim.opacity 1 ] ] model.scene
+              }
+            , Cmd.none
+            )
+
         Animate animMsg ->
-            ( model, Cmd.none )
+            ( { model
+                | scene = Anim.update animMsg model.scene
+              }
+            , Cmd.none
+            )
 
 
 view : Model -> Html Msg
@@ -60,7 +92,8 @@ view model =
         , Attr.style "height" "750px"
         ]
         [ h1 [ Attr.style "cursor" "pointer" ]
-            []
+            [ span [ onClick Step1 ] [ text "Step 1" ]
+            ]
         , mainCanvas model
         ]
 
@@ -246,27 +279,13 @@ mainCanvas : Model -> Html Msg
 mainCanvas model =
     let
         aPoint =
-            { x = 300, y = 400 }
-
-        v1 =
-            { x = 10, y = 740 }
-
-        v2 =
-            { x = 740, y = 740 }
+            model.aPoint
 
         eq =
-            equilateralFromLine { start = v1, end = v2 }
-
-        eqBC =
-            equilateral { start = eq.b, end = eq.c } aPoint
-                |> Debug.log "BC"
+            model.eq
 
         centerBC =
             equilateralCenter eqBC
-
-        eqAC =
-            equilateral { start = eq.a, end = eq.c } aPoint
-                |> Debug.log "AC"
 
         eqUpper =
             equilateral { start = eqAC.a, end = eqBC.a } eq.c
@@ -282,7 +301,18 @@ mainCanvas model =
 
         prAB =
             projection { start = eq.a, end = eq.b } aPoint
-                |> Debug.log "prAB"
+
+        eqAC =
+            equilateral { start = eq.a, end = eq.c } aPoint
+
+        prAC =
+            projection { start = eq.a, end = eq.c } aPoint
+
+        eqBC =
+            equilateral { start = eq.b, end = eq.c } aPoint
+
+        prBC =
+            projection { start = eq.b, end = eq.c } aPoint
     in
         div []
             [ svg
@@ -310,14 +340,14 @@ mainCanvas model =
                         ]
                         []
                     , polygon
-                        [ points (equilateralAsString eq)
+                        [ points (equilateralAsString model.eq)
                         , fill "none"
                         , strokeWidth "1"
                         , stroke "black"
                         ]
                         []
                     , g
-                        []
+                        (Anim.render model.scene)
                         [ polygon
                             [ points (equilateralAsString eqAB)
                             , fill "none"
@@ -338,21 +368,41 @@ mainCanvas model =
                     , g []
                         [ g
                             -- [ Svg.Attributes.style originAsString, transform "rotate(-120)" ]
-                            []
-                            [ polygon
-                                [ points (equilateralAsString eqAC)
-                                , fill "none"
-                                , strokeWidth "1"
-                                , stroke "black"
+                            (Anim.render model.scene)
+                            [ g []
+                                [ polygon
+                                    [ points (equilateralAsString eqAC)
+                                    , fill "none"
+                                    , strokeWidth "1"
+                                    , stroke "black"
+                                    ]
+                                    []
+                                , line
+                                    [ x1 (String.fromFloat aPoint.x)
+                                    , y1 (String.fromFloat aPoint.y)
+                                    , x2 (String.fromFloat prAC.x)
+                                    , y2 (String.fromFloat prAC.y)
+                                    , stroke "red"
+                                    ]
+                                    []
                                 ]
-                                []
-                            , polygon
-                                [ points (equilateralAsString eqBC)
-                                , fill "none"
-                                , strokeWidth "1"
-                                , stroke "black"
+                            , g []
+                                [ polygon
+                                    [ points (equilateralAsString eqBC)
+                                    , fill "none"
+                                    , strokeWidth "1"
+                                    , stroke "black"
+                                    ]
+                                    []
+                                , line
+                                    [ x1 (String.fromFloat aPoint.x)
+                                    , y1 (String.fromFloat aPoint.y)
+                                    , x2 (String.fromFloat prBC.x)
+                                    , y2 (String.fromFloat prBC.y)
+                                    , stroke "orange"
+                                    ]
+                                    []
                                 ]
-                                []
                             , polygon
                                 [ points (equilateralAsString eqUpper)
                                 , fill "none"
