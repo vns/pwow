@@ -24,6 +24,10 @@ type alias Model =
     Int
 
 
+type Msg
+    = Msg1
+
+
 init : () -> ( Model, Cmd Msg )
 init _ =
     ( 0
@@ -33,7 +37,7 @@ init _ =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    \_ -> Sub.none
+    Sub.none
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
