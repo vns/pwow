@@ -33,6 +33,7 @@ type alias Model =
 type Msg
     = Step1
     | Step2
+    | Step3
     | Animate Anim.Msg
 
 
@@ -49,7 +50,7 @@ init _ =
           , aPoint = aPoint
           , scene = Anim.style [ Anim.opacity 0 ]
           , rotation1 = Anim.style [ Anim.rotate (Anim.deg 0) ]
-          , rotation2 = Anim.style []
+          , rotation2 = Anim.style [ Anim.rotate (Anim.deg 0) ]
           }
         , Cmd.none
         )
@@ -97,21 +98,51 @@ update msg model =
                 ( { model
                     | rotation1 =
                         Anim.interrupt
-                            [ Anim.repeat 10
-                                [ Anim.set
-                                    [ Anim.transformOrigin
-                                        (Anim.px center.x)
-                                        (Anim.px center.y)
-                                        (Anim.px 0.0)
-                                    ]
-                                , Anim.to
-                                    [ Anim.rotate (Anim.deg 120)
-                                    ]
-
-                                -- , Anim.set [ Anim.rotate (Anim.deg 12) ]
+                            [ Anim.set
+                                [ Anim.transformOrigin
+                                    (Anim.px center.x)
+                                    (Anim.px center.y)
+                                    (Anim.px 0.0)
                                 ]
+                            , Anim.to
+                                [ Anim.rotate (Anim.deg 120)
+                                ]
+
+                            -- , Anim.set [ Anim.rotate (Anim.deg 12) ]
                             ]
                             model.rotation1
+                  }
+                , Cmd.none
+                )
+
+        Step3 ->
+            let
+                eqAC =
+                    equilateral { start = model.eq.a, end = model.eq.c } model.aPoint
+
+                eqBC =
+                    equilateral { start = model.eq.b, end = model.eq.c } model.aPoint
+
+                eqUpper =
+                    equilateral { start = eqAC.a, end = eqBC.a } model.eq.c
+
+                center =
+                    equilateralCenter eqUpper
+            in
+                ( { model
+                    | rotation2 =
+                        Anim.interrupt
+                            [ Anim.set
+                                [ Anim.transformOrigin
+                                    (Anim.px center.x)
+                                    (Anim.px center.y)
+                                    (Anim.px 0.0)
+                                ]
+                            , Anim.to
+                                [ Anim.rotate (Anim.deg 120)
+                                ]
+                            ]
+                            model.rotation2
                   }
                 , Cmd.none
                 )
@@ -136,6 +167,7 @@ view model =
         [ h1 [ Attr.style "cursor" "pointer" ]
             [ span [ onClick Step1, Attr.style "margin-right" "30px" ] [ text "Step 1" ]
             , span [ onClick Step2, Attr.style "margin-right" "30px" ] [ text "Step 2" ]
+            , span [ onClick Step3, Attr.style "margin-right" "30px" ] [ text "Step 3" ]
             ]
         , mainCanvas model
         ]
@@ -333,12 +365,6 @@ mainCanvas model =
         eqUpper =
             equilateral { start = eqAC.a, end = eqBC.a } eq.c
 
-        origin =
-            equilateralCenter eqUpper
-
-        originAsString =
-            "transform-origin: " ++ String.fromFloat (origin.x) ++ "px " ++ String.fromFloat (origin.y) ++ "px"
-
         eqAB =
             equilateral { start = eq.a, end = eq.b } aPoint
 
@@ -364,27 +390,6 @@ mainCanvas model =
                     [ circle
                         [ cx (String.fromFloat aPoint.x)
                         , cy (String.fromFloat aPoint.y)
-                        , r "2"
-                        , fill "black"
-                        ]
-                        []
-                    , circle
-                        [ cx (String.fromFloat 300.0)
-                        , cy (String.fromFloat 626.0)
-                        , r "2"
-                        , fill "black"
-                        ]
-                        []
-                    , circle
-                        [ cx (String.fromFloat origin.x)
-                        , cy (String.fromFloat origin.y)
-                        , r "2"
-                        , fill "black"
-                        ]
-                        []
-                    , circle
-                        [ cx (String.fromFloat centerBC.x)
-                        , cy (String.fromFloat centerBC.y)
                         , r "2"
                         , fill "black"
                         ]
@@ -417,8 +422,9 @@ mainCanvas model =
                         ]
                     , g []
                         [ g
-                            -- [ Svg.Attributes.style originAsString, transform "rotate(-120)" ]
-                            (Anim.render model.scene)
+                            ((Anim.render model.scene)
+                                ++ (Anim.render model.rotation2)
+                            )
                             [ g (Anim.render model.rotation1)
                                 [ polygon
                                     [ points (equilateralAsString eqAC)
