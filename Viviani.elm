@@ -25,11 +25,14 @@ type alias Model =
     { eq : Equilateral
     , aPoint : Point
     , scene : Anim.State
+    , rotation1 : Anim.State
+    , rotation2 : Anim.State
     }
 
 
 type Msg
     = Step1
+    | Step2
     | Animate Anim.Msg
 
 
@@ -45,6 +48,8 @@ init _ =
         ( { eq = eq
           , aPoint = aPoint
           , scene = Anim.style [ Anim.opacity 0 ]
+          , rotation1 = Anim.style [ Anim.rotate (Anim.deg 0) ]
+          , rotation2 = Anim.style []
           }
         , Cmd.none
         )
@@ -62,7 +67,10 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Anim.subscription Animate
-            [ model.scene ]
+            [ model.scene
+            , model.rotation1
+            , model.rotation2
+            ]
         ]
 
 
@@ -76,9 +84,43 @@ update msg model =
             , Cmd.none
             )
 
+        Step2 ->
+            let
+                eqAC =
+                    equilateral { start = model.eq.a, end = model.eq.c }
+                        model.aPoint
+
+                center =
+                    equilateralCenter eqAC
+                        |> Debug.log "center"
+            in
+                ( { model
+                    | rotation1 =
+                        Anim.interrupt
+                            [ Anim.repeat 10
+                                [ Anim.set
+                                    [ Anim.transformOrigin
+                                        (Anim.px center.x)
+                                        (Anim.px center.y)
+                                        (Anim.px 0.0)
+                                    ]
+                                , Anim.to
+                                    [ Anim.rotate (Anim.deg 120)
+                                    ]
+
+                                -- , Anim.set [ Anim.rotate (Anim.deg 12) ]
+                                ]
+                            ]
+                            model.rotation1
+                  }
+                , Cmd.none
+                )
+
         Animate animMsg ->
             ( { model
                 | scene = Anim.update animMsg model.scene
+                , rotation1 = Anim.update animMsg model.rotation1
+                , rotation2 = Anim.update animMsg model.rotation2
               }
             , Cmd.none
             )
@@ -92,7 +134,8 @@ view model =
         , Attr.style "height" "750px"
         ]
         [ h1 [ Attr.style "cursor" "pointer" ]
-            [ span [ onClick Step1 ] [ text "Step 1" ]
+            [ span [ onClick Step1, Attr.style "margin-right" "30px" ] [ text "Step 1" ]
+            , span [ onClick Step2, Attr.style "margin-right" "30px" ] [ text "Step 2" ]
             ]
         , mainCanvas model
         ]
@@ -326,6 +369,13 @@ mainCanvas model =
                         ]
                         []
                     , circle
+                        [ cx (String.fromFloat 300.0)
+                        , cy (String.fromFloat 626.0)
+                        , r "2"
+                        , fill "black"
+                        ]
+                        []
+                    , circle
                         [ cx (String.fromFloat origin.x)
                         , cy (String.fromFloat origin.y)
                         , r "2"
@@ -369,7 +419,7 @@ mainCanvas model =
                         [ g
                             -- [ Svg.Attributes.style originAsString, transform "rotate(-120)" ]
                             (Anim.render model.scene)
-                            [ g []
+                            [ g (Anim.render model.rotation1)
                                 [ polygon
                                     [ points (equilateralAsString eqAC)
                                     , fill "none"
