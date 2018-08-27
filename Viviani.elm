@@ -179,7 +179,7 @@ view model =
             , span [ onClick Step3, Attr.style "margin-right" "30px" ] [ text "Step 3" ]
             ]
         , div
-            []
+            [ Attr.style "cursor" "crosshair" ]
             [ mainCanvas model ]
         ]
 
