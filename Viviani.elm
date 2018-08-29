@@ -149,10 +149,16 @@ update msg model =
 
         MouseClick clickedPoint ->
             let
-                _ =
-                    clickedPoint |> Debug.log "mouseClick"
+                inside =
+                    pointInEquilateral clickedPoint model.eq
+
+                newPoint =
+                    if pointInEquilateral clickedPoint model.eq then
+                        clickedPoint
+                    else
+                        model.aPoint
             in
-                ( { model | aPoint = clickedPoint }
+                ( { model | aPoint = newPoint }
                 , Cmd.none
                 )
 
@@ -312,6 +318,35 @@ lineCenter { start, end } =
 
 
 
+-- rotate 90 degrees counter-clockwise
+
+
+rotate90 : Vector -> Vector
+rotate90 { x, y } =
+    { x = y, y = -x }
+
+
+leftOf : Point -> Line -> Bool
+leftOf point line =
+    let
+        v1 =
+            vectorFromLine { start = line.start, end = point }
+
+        v2 =
+            vectorFromLine { start = line.start, end = line.end }
+                |> rotate90
+    in
+        dot v1 v2 > 0.0
+
+
+pointInEquilateral : Point -> Equilateral -> Bool
+pointInEquilateral pt eq =
+    leftOf pt { start = eq.a, end = eq.b }
+        && leftOf pt { start = eq.c, end = eq.a }
+        && leftOf pt { start = eq.b, end = eq.c }
+
+
+
 -- Apex is left of line direction
 
 
@@ -323,7 +358,7 @@ equilateralFromLine line =
                 -- normalize
                 |> norm
                 -- rotate 90 degrees counter-clockwise
-                |> \{ x, y } -> { x = y, y = -x }
+                |> rotate90
 
         side =
             dist line.start line.end
