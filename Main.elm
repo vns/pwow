@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Browser
-import Color.Palette exposing (darkRed, darkGreen, white)
+import Color.Palette exposing (red, green, white)
 import Html exposing (..)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
@@ -41,7 +41,7 @@ type alias Model =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { tria1 = Anim.style [ Anim.fill darkRed, Anim.points initialTria ]
+    ( { tria1 = Anim.style [ Anim.fill red, Anim.points initialTria ]
       , tria2 = Anim.style [ Anim.fill white, Anim.points initialTria ]
       , tria3 = Anim.style [ Anim.fill white, Anim.points initialTria ]
       , tria4 = Anim.style [ Anim.fill white, Anim.points initialTria ]
@@ -121,7 +121,7 @@ update msg model =
                         |> map (translate ( 0, 700 ))
 
                 newTria1Style =
-                    [ Anim.points tria1, Anim.fill darkRed ]
+                    [ Anim.points tria1, Anim.fill red ]
 
                 newTria2Style =
                     [ Anim.points tria2, Anim.fill white ]
@@ -192,16 +192,16 @@ update msg model =
                         |> map (translate ( 0, 700 ))
 
                 newTria1Style =
-                    [ Anim.points tria1, Anim.fill darkRed ]
+                    [ Anim.points tria1, Anim.fill red ]
 
                 newTria2Style =
-                    [ Anim.points tria2, Anim.fill darkGreen ]
+                    [ Anim.points tria2, Anim.fill green ]
 
                 newTria3Style =
-                    [ Anim.points tria3, Anim.fill darkRed ]
+                    [ Anim.points tria3, Anim.fill red ]
 
                 newTria4Style =
-                    [ Anim.points tria4, Anim.fill darkGreen ]
+                    [ Anim.points tria4, Anim.fill green ]
 
                 oldLabels =
                     model.labels
@@ -325,22 +325,22 @@ update msg model =
 
                 newTria1Style =
                     [ Anim.points tria1
-                    , Anim.fill darkRed
+                    , Anim.fill red
                     ]
 
                 newTria2Style =
                     [ Anim.points tria2
-                    , Anim.fill darkGreen
+                    , Anim.fill green
                     ]
 
                 newTria3Style =
                     [ Anim.points tria3
-                    , Anim.fill darkRed
+                    , Anim.fill red
                     ]
 
                 newTria4Style =
                     [ Anim.points tria4
-                    , Anim.fill darkGreen
+                    , Anim.fill green
                     ]
 
                 oldLabels =
@@ -393,11 +393,21 @@ tria base height color =
     ]
 
 
+theoremDef =
+    """
+from Late Latin theorema, from Greek theorema "spectacle, sight," in Euclid "proposition to be proved," literally "that which is looked at," from theorein "to look at, behold"
+"""
+
+
 view : Model -> Html Msg
 view model =
     div []
         [ div [ Attr.class "header" ]
             [ h1 [] [ Html.text "proofs without words" ]
+            , div [ Attr.class "definition" ]
+                [ strong [] [ Html.text "theorem (n.): " ]
+                , Html.text theoremDef
+                ]
             ]
         , div [ Attr.class "content" ]
             [ div [ Attr.class "sidebar" ]
@@ -431,7 +441,7 @@ mainCanvas model =
         [ svg
             [ version "1.1", width "500", height "500", viewBox "0 0 700 700", stroke "#444" ]
             [ g []
-                [ rect [ fill "white", strokeWidth "2", x "0", y "0", width "700", height "700" ] []
+                [ rect [ fill "#eee", strokeWidth "0", x "0", y "0", width "700", height "700" ] []
                 , g [ strokeWidth "0" ]
                     [ polygon (Anim.render model.tria2) []
                     , polygon (Anim.render model.tria3) []

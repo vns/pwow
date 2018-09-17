@@ -1,17 +1,26 @@
 body {
     margin: 0;
     padding: 15px 30px;
+    font-family: helvetica, sans-serif;
 }
 
 .header {
-    margin-bottom: 100px;
+}
+
+.definition {
+    height: 100px;
+    line-height: 100px;
+    font-size: 13px;
 }
 
 .header h1 {
     font-family: helvetica, sans-serif;
     font-size: 18px;
     font-weight: normal;
+    margin-bottom: 0;
 }
+
+
 
 .sidebar {
     width: 200px;
