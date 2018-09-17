@@ -1,8 +1,8 @@
 module Main exposing (main)
 
-import Browser
-import Color.Palette exposing (darkYellow, purple, white)
-import Html exposing (Html, div, h1, span)
+import Browser exposing (Document)
+import Color.Palette exposing (darkRed, darkGreen, white)
+import Html exposing (..)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 import Svg exposing (..)
@@ -12,7 +12,7 @@ import List exposing (map, range)
 
 
 main =
-    Browser.element
+    Browser.document
         { init = init
         , update = update
         , subscriptions = subscriptions
@@ -41,7 +41,7 @@ type alias Model =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { tria1 = Anim.style [ Anim.fill darkYellow, Anim.points initialTria ]
+    ( { tria1 = Anim.style [ Anim.fill darkRed, Anim.points initialTria ]
       , tria2 = Anim.style [ Anim.fill white, Anim.points initialTria ]
       , tria3 = Anim.style [ Anim.fill white, Anim.points initialTria ]
       , tria4 = Anim.style [ Anim.fill white, Anim.points initialTria ]
@@ -121,7 +121,7 @@ update msg model =
                         |> map (translate ( 0, 700 ))
 
                 newTria1Style =
-                    [ Anim.points tria1, Anim.fill darkYellow ]
+                    [ Anim.points tria1, Anim.fill darkRed ]
 
                 newTria2Style =
                     [ Anim.points tria2, Anim.fill white ]
@@ -192,16 +192,16 @@ update msg model =
                         |> map (translate ( 0, 700 ))
 
                 newTria1Style =
-                    [ Anim.points tria1, Anim.fill darkYellow ]
+                    [ Anim.points tria1, Anim.fill darkRed ]
 
                 newTria2Style =
-                    [ Anim.points tria2, Anim.fill purple ]
+                    [ Anim.points tria2, Anim.fill darkGreen ]
 
                 newTria3Style =
-                    [ Anim.points tria3, Anim.fill darkYellow ]
+                    [ Anim.points tria3, Anim.fill darkRed ]
 
                 newTria4Style =
-                    [ Anim.points tria4, Anim.fill purple ]
+                    [ Anim.points tria4, Anim.fill darkGreen ]
 
                 oldLabels =
                     model.labels
@@ -325,22 +325,22 @@ update msg model =
 
                 newTria1Style =
                     [ Anim.points tria1
-                    , Anim.fill darkYellow
+                    , Anim.fill darkRed
                     ]
 
                 newTria2Style =
                     [ Anim.points tria2
-                    , Anim.fill purple
+                    , Anim.fill darkGreen
                     ]
 
                 newTria3Style =
                     [ Anim.points tria3
-                    , Anim.fill darkYellow
+                    , Anim.fill darkRed
                     ]
 
                 newTria4Style =
                     [ Anim.points tria4
-                    , Anim.fill purple
+                    , Anim.fill darkGreen
                     ]
 
                 oldLabels =
@@ -393,49 +393,67 @@ tria base height color =
     ]
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-    div
-        [ Attr.style "margin" "200px auto"
-        , Attr.style "width" "700px"
-        , Attr.style "height" "750px"
-        ]
-        [ h1 [ Attr.style "cursor" "pointer" ]
-            [ span [ onClick Step0, Attr.style "margin-right" "30px" ] [ text "Step 0" ]
-            , span [ onClick Step1, Attr.style "margin-right" "30px" ] [ text "Step 1" ]
-            , span [ onClick Step2, Attr.style "margin-right" "30px" ] [ text "Step 2" ]
-            , span [ onClick Step3, Attr.style "margin-right" "30px" ] [ text "Step 3" ]
+    { title = "Pythagorean Theorem"
+    , body =
+        [ div [ Attr.class "header" ]
+            [ h1 [] [ Html.text "proofs without words" ]
             ]
-        , mainCanvas model
+        , div [ Attr.class "content" ]
+            [ div [ Attr.class "sidebar" ]
+                [ ul []
+                    [ li [] [ Html.a [ Attr.href "#", Attr.class "active" ] [ Html.text "pythagorean theorem" ] ]
+                    , li [] [ Html.a [ Attr.href "#" ] [ Html.text "viviani's theorem" ] ]
+                    , li [] [ Html.a [ Attr.href "#" ] [ Html.text "infinite series" ] ]
+                    ]
+                ]
+            , div [ Attr.class "steps" ]
+                [ span [ onClick Step0, Attr.class "step active" ] []
+                , span [ onClick Step1, Attr.class "step" ] []
+                , span [ onClick Step2, Attr.class "step" ] []
+                , span [ onClick Step3, Attr.class "step" ] []
+                ]
+            , div [ Attr.class "main" ]
+                [ div
+                    [ Attr.class "canvas-container"
+                    , Attr.style "width" "500px"
+                    , Attr.style "height" "500px"
+                    ]
+                    [ mainCanvas model ]
+                ]
+            ]
         ]
+    }
 
 
 mainCanvas : Model -> Html.Html msg
 mainCanvas model =
     div []
         [ svg
-            [ version "1.1", width "700", height "750", viewBox "0 0 700 750", stroke "black" ]
+            [ version "1.1", width "500", height "500", viewBox "0 0 700 700", stroke "#999" ]
             [ g []
                 [ rect [ fill "white", stroke "1", x "0", y "0", width "700", height "700" ] []
                 , polygon (Anim.render model.tria2) []
                 , polygon (Anim.render model.tria3) []
                 , polygon (Anim.render model.tria4) []
                 , polygon (Anim.render model.tria1) []
-                , squared
-                    ((Anim.render model.labels.csq)
-                        ++ [ x "342", y "355", color "darkGray" ]
-                    )
-                    "c"
-                , squared
-                    ((Anim.render model.labels.asq)
-                        ++ [ x "242", y "255", color "darkGray" ]
-                    )
-                    "a"
-                , squared
-                    ((Anim.render model.labels.asq)
-                        ++ [ x "592", y "605", color "darkGray" ]
-                    )
-                    "b"
+
+                -- , squared
+                --     ((Anim.render model.labels.csq)
+                --         ++ [ x "342", y "355", color "darkGray" ]
+                --     )
+                --     "c"
+                -- , squared
+                --     ((Anim.render model.labels.asq)
+                --         ++ [ x "242", y "255", color "darkGray" ]
+                --     )
+                --     "a"
+                -- , squared
+                --     ((Anim.render model.labels.asq)
+                --         ++ [ x "592", y "605", color "darkGray" ]
+                --     )
+                --     "b"
                 ]
 
             -- [ g [] (List.map (\poly -> polygon (Anim.render poly) []) model.styles)
@@ -446,8 +464,8 @@ mainCanvas model =
 squared attrList letter =
     text_ attrList
         [ tspan
-            [ fontSize "35" ]
-            [ text letter
-            , tspan [ dy "-10", fontSize "20" ] [ text "2" ]
+            [ fontSize "35", stroke "darkGray" ]
+            [ Svg.text letter
+            , tspan [ dy "-10", fontSize "20" ] [ Svg.text "2" ]
             ]
         ]
