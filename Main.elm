@@ -442,7 +442,7 @@ tria base height color =
 
 theoremDef =
     """
-from Late Latin theorema, from Greek theorema "spectacle, sight," in Euclid "proposition to be proved," literally "that which is looked at," from theorein "to look at, behold"
+from Greek theorema "spectacle, sight," in Euclid "proposition to be proved," literally "that which is looked at," from theorein "to look at, behold"
 """
 
 
