@@ -33,6 +33,7 @@ type alias Model =
     , tria3 : Anim.State
     , tria4 : Anim.State
     , labels : Labels
+    , step : Step
 
     -- , rect1 : Anim.State
     -- , rect2 : Anim.State
@@ -41,18 +42,41 @@ type alias Model =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { tria1 = Anim.style [ Anim.fill red, Anim.points initialTria ]
-      , tria2 = Anim.style [ Anim.fill white, Anim.points initialTria ]
-      , tria3 = Anim.style [ Anim.fill white, Anim.points initialTria ]
-      , tria4 = Anim.style [ Anim.fill white, Anim.points initialTria ]
-      , labels =
-            { csq = Anim.style [ Anim.display Anim.none ]
-            , asq = Anim.style [ Anim.display Anim.none ]
-            , bsq = Anim.style [ Anim.display Anim.none ]
-            }
-      }
-    , Cmd.none
-    )
+    let
+        tria1 =
+            initialTria
+
+        tria2 =
+            initialTria
+                |> map rotate90
+                |> map (translate ( 700, 0 ))
+
+        tria3 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 700, 700 ))
+
+        tria4 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 0, 700 ))
+    in
+        ( { tria1 = Anim.style [ Anim.fill red, Anim.points tria1 ]
+          , tria2 = Anim.style [ Anim.fill white, Anim.points tria2 ]
+          , tria3 = Anim.style [ Anim.fill white, Anim.points tria3 ]
+          , tria4 = Anim.style [ Anim.fill white, Anim.points tria4 ]
+          , labels =
+                { csq = Anim.style [ Anim.display Anim.none ]
+                , asq = Anim.style [ Anim.display Anim.none ]
+                , bsq = Anim.style [ Anim.display Anim.none ]
+                }
+          , step = Step0
+          }
+        , Cmd.none
+        )
 
 
 subscriptions : Model -> Sub Msg
@@ -70,7 +94,11 @@ subscriptions model =
 
 type Msg
     = Animate Anim.Msg
-    | Step0
+    | Step Step
+
+
+type Step
+    = Step0
     | Step1
     | Step2
     | Step3
@@ -94,274 +122,293 @@ triaAnim color points =
     ]
 
 
+step0 : Model -> Model
+step0 model =
+    let
+        tria1 =
+            initialTria
+
+        tria2 =
+            initialTria
+                |> map rotate90
+                |> map (translate ( 700, 0 ))
+
+        tria3 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 700, 700 ))
+
+        tria4 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 0, 700 ))
+
+        newTria1Style =
+            [ Anim.points tria1, Anim.fill red ]
+
+        newTria2Style =
+            [ Anim.points tria2, Anim.fill white ]
+
+        newTria3Style =
+            [ Anim.points tria3, Anim.fill white ]
+
+        newTria4Style =
+            [ Anim.points tria4, Anim.fill white ]
+
+        oldLabels =
+            model.labels
+
+        newLabels =
+            { oldLabels
+                | csq = Anim.interrupt [ Anim.set [ Anim.display Anim.block ] ] oldLabels.csq
+                , asq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.asq
+                , bsq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.bsq
+            }
+    in
+        { model
+            | tria1 =
+                Anim.interrupt
+                    [ Anim.to newTria1Style
+                    ]
+                    model.tria1
+            , tria2 =
+                Anim.interrupt
+                    [ Anim.to newTria2Style
+                    ]
+                    model.tria2
+            , tria3 =
+                Anim.interrupt
+                    [ Anim.to newTria3Style
+                    ]
+                    model.tria3
+            , tria4 =
+                Anim.interrupt
+                    [ Anim.to newTria4Style
+                    ]
+                    model.tria4
+            , labels = newLabels
+        }
+
+
+step1 : Model -> Model
+step1 model =
+    let
+        tria1 =
+            initialTria
+
+        tria2 =
+            initialTria
+                |> map rotate90
+                |> map (translate ( 700, 0 ))
+
+        tria3 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 700, 700 ))
+
+        tria4 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 0, 700 ))
+
+        newTria1Style =
+            [ Anim.points tria1, Anim.fill red ]
+
+        newTria2Style =
+            [ Anim.points tria2, Anim.fill green ]
+
+        newTria3Style =
+            [ Anim.points tria3, Anim.fill red ]
+
+        newTria4Style =
+            [ Anim.points tria4, Anim.fill green ]
+
+        oldLabels =
+            model.labels
+
+        newLabels =
+            { oldLabels
+                | csq = Anim.interrupt [ Anim.set [ Anim.display Anim.block ] ] oldLabels.csq
+                , asq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.asq
+                , bsq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.bsq
+            }
+    in
+        { model
+            | tria1 =
+                Anim.interrupt
+                    [ Anim.to newTria1Style
+                    ]
+                    model.tria1
+            , tria2 =
+                Anim.interrupt
+                    [ Anim.to newTria2Style
+                    ]
+                    model.tria2
+            , tria3 =
+                Anim.interrupt
+                    [ Anim.to newTria3Style
+                    ]
+                    model.tria3
+            , tria4 =
+                Anim.interrupt
+                    [ Anim.to newTria4Style
+                    ]
+                    model.tria4
+            , labels = newLabels
+        }
+
+
+step2 : Model -> Model
+step2 model =
+    let
+        tria1 =
+            initialTria
+                |> map (translate ( 200, 500 ))
+
+        tria2 =
+            initialTria
+                |> map rotate90
+                |> map (translate ( 700, 0 ))
+
+        tria3 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 700, 700 ))
+
+        tria4 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 500, 500 ))
+
+        newTria1Style =
+            [ Anim.points tria1
+            ]
+
+        newTria2Style =
+            [ Anim.points tria2
+            ]
+
+        newTria3Style =
+            [ Anim.points tria3
+            ]
+
+        newTria4Style =
+            [ Anim.points tria4
+            ]
+
+        oldLabels =
+            model.labels
+
+        newLabels =
+            { oldLabels
+                | csq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.csq
+                , asq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.asq
+                , bsq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.bsq
+            }
+    in
+        { model
+            | tria1 = Anim.interrupt [ Anim.to newTria1Style ] model.tria1
+            , tria2 = Anim.interrupt [ Anim.to newTria2Style ] model.tria2
+            , tria3 = Anim.interrupt [ Anim.to newTria3Style ] model.tria3
+            , tria4 = Anim.interrupt [ Anim.to newTria4Style ] model.tria4
+            , labels = newLabels
+        }
+
+
+step3 : Model -> Model
+step3 model =
+    let
+        tria1 =
+            initialTria
+                |> map (translate ( 0, 500 ))
+
+        tria2 =
+            initialTria
+                |> map rotate90
+                |> map (translate ( 700, 0 ))
+
+        tria3 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 500, 700 ))
+
+        tria4 =
+            initialTria
+                |> map rotate90
+                |> map rotate90
+                |> map rotate90
+                |> map (translate ( 500, 500 ))
+
+        newTria1Style =
+            [ Anim.points tria1
+            , Anim.fill red
+            ]
+
+        newTria2Style =
+            [ Anim.points tria2
+            , Anim.fill green
+            ]
+
+        newTria3Style =
+            [ Anim.points tria3
+            , Anim.fill red
+            ]
+
+        newTria4Style =
+            [ Anim.points tria4
+            , Anim.fill green
+            ]
+
+        oldLabels =
+            model.labels
+
+        newLabels =
+            { oldLabels
+                | csq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.csq
+                , asq = Anim.interrupt [ Anim.set [ Anim.display Anim.block ] ] oldLabels.asq
+                , bsq = Anim.interrupt [ Anim.set [ Anim.display Anim.block ] ] oldLabels.bsq
+            }
+    in
+        { model
+            | tria1 = Anim.interrupt [ Anim.to newTria1Style ] model.tria1
+            , tria2 = Anim.interrupt [ Anim.to newTria2Style ] model.tria2
+            , tria3 = Anim.interrupt [ Anim.to newTria3Style ] model.tria3
+            , tria4 = Anim.interrupt [ Anim.to newTria4Style ] model.tria4
+            , labels = newLabels
+        }
+
+
+makeStepFn : Step -> (Model -> Model)
+makeStepFn step =
+    case step of
+        Step0 ->
+            step0
+
+        Step1 ->
+            step1
+
+        Step2 ->
+            step2
+
+        Step3 ->
+            step3
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Step0 ->
-            let
-                tria1 =
-                    initialTria
-
-                tria2 =
-                    initialTria
-                        |> map rotate90
-                        |> map (translate ( 700, 0 ))
-
-                tria3 =
-                    initialTria
-                        |> map rotate90
-                        |> map rotate90
-                        |> map (translate ( 700, 700 ))
-
-                tria4 =
-                    initialTria
-                        |> map rotate90
-                        |> map rotate90
-                        |> map rotate90
-                        |> map (translate ( 0, 700 ))
-
-                newTria1Style =
-                    [ Anim.points tria1, Anim.fill red ]
-
-                newTria2Style =
-                    [ Anim.points tria2, Anim.fill white ]
-
-                newTria3Style =
-                    [ Anim.points tria3, Anim.fill white ]
-
-                newTria4Style =
-                    [ Anim.points tria4, Anim.fill white ]
-
-                oldLabels =
-                    model.labels
-
-                newLabels =
-                    { oldLabels
-                        | csq = Anim.interrupt [ Anim.set [ Anim.display Anim.block ] ] oldLabels.csq
-                        , asq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.asq
-                        , bsq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.bsq
-                    }
-            in
-                ( { model
-                    | tria1 =
-                        Anim.interrupt
-                            [ Anim.to newTria1Style
-                            ]
-                            model.tria1
-                    , tria2 =
-                        Anim.interrupt
-                            [ Anim.to newTria2Style
-                            ]
-                            model.tria2
-                    , tria3 =
-                        Anim.interrupt
-                            [ Anim.to newTria3Style
-                            ]
-                            model.tria3
-                    , tria4 =
-                        Anim.interrupt
-                            [ Anim.to newTria4Style
-                            ]
-                            model.tria4
-                    , labels = newLabels
-                  }
-                , Cmd.none
-                )
-
-        Step1 ->
-            let
-                tria1 =
-                    initialTria
-
-                tria2 =
-                    initialTria
-                        |> map rotate90
-                        |> map (translate ( 700, 0 ))
-
-                tria3 =
-                    initialTria
-                        |> map rotate90
-                        |> map rotate90
-                        |> map (translate ( 700, 700 ))
-
-                tria4 =
-                    initialTria
-                        |> map rotate90
-                        |> map rotate90
-                        |> map rotate90
-                        |> map (translate ( 0, 700 ))
-
-                newTria1Style =
-                    [ Anim.points tria1, Anim.fill red ]
-
-                newTria2Style =
-                    [ Anim.points tria2, Anim.fill green ]
-
-                newTria3Style =
-                    [ Anim.points tria3, Anim.fill red ]
-
-                newTria4Style =
-                    [ Anim.points tria4, Anim.fill green ]
-
-                oldLabels =
-                    model.labels
-
-                newLabels =
-                    { oldLabels
-                        | csq = Anim.interrupt [ Anim.set [ Anim.display Anim.block ] ] oldLabels.csq
-                        , asq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.asq
-                        , bsq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.bsq
-                    }
-            in
-                ( { model
-                    | tria1 =
-                        Anim.interrupt
-                            [ Anim.to newTria1Style
-                            ]
-                            model.tria1
-                    , tria2 =
-                        Anim.interrupt
-                            [ Anim.to newTria2Style
-                            ]
-                            model.tria2
-                    , tria3 =
-                        Anim.interrupt
-                            [ Anim.to newTria3Style
-                            ]
-                            model.tria3
-                    , tria4 =
-                        Anim.interrupt
-                            [ Anim.to newTria4Style
-                            ]
-                            model.tria4
-                    , labels = newLabels
-                  }
-                , Cmd.none
-                )
-
-        Step2 ->
-            let
-                tria1 =
-                    initialTria
-                        |> map (translate ( 200, 500 ))
-
-                tria2 =
-                    initialTria
-                        |> map rotate90
-                        |> map (translate ( 700, 0 ))
-
-                tria3 =
-                    initialTria
-                        |> map rotate90
-                        |> map rotate90
-                        |> map (translate ( 700, 700 ))
-
-                tria4 =
-                    initialTria
-                        |> map rotate90
-                        |> map rotate90
-                        |> map rotate90
-                        |> map (translate ( 500, 500 ))
-
-                newTria1Style =
-                    [ Anim.points tria1
-                    ]
-
-                newTria2Style =
-                    [ Anim.points tria2
-                    ]
-
-                newTria3Style =
-                    [ Anim.points tria3
-                    ]
-
-                newTria4Style =
-                    [ Anim.points tria4
-                    ]
-
-                oldLabels =
-                    model.labels
-
-                newLabels =
-                    { oldLabels
-                        | csq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.csq
-                        , asq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.asq
-                        , bsq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.bsq
-                    }
-            in
-                ( { model
-                    | tria1 = Anim.interrupt [ Anim.to newTria1Style ] model.tria1
-                    , tria2 = Anim.interrupt [ Anim.to newTria2Style ] model.tria2
-                    , tria3 = Anim.interrupt [ Anim.to newTria3Style ] model.tria3
-                    , tria4 = Anim.interrupt [ Anim.to newTria4Style ] model.tria4
-                    , labels = newLabels
-                  }
-                , Cmd.none
-                )
-
-        Step3 ->
-            let
-                tria1 =
-                    initialTria
-                        |> map (translate ( 0, 500 ))
-
-                tria2 =
-                    initialTria
-                        |> map rotate90
-                        |> map (translate ( 700, 0 ))
-
-                tria3 =
-                    initialTria
-                        |> map rotate90
-                        |> map rotate90
-                        |> map (translate ( 500, 700 ))
-
-                tria4 =
-                    initialTria
-                        |> map rotate90
-                        |> map rotate90
-                        |> map rotate90
-                        |> map (translate ( 500, 500 ))
-
-                newTria1Style =
-                    [ Anim.points tria1
-                    , Anim.fill red
-                    ]
-
-                newTria2Style =
-                    [ Anim.points tria2
-                    , Anim.fill green
-                    ]
-
-                newTria3Style =
-                    [ Anim.points tria3
-                    , Anim.fill red
-                    ]
-
-                newTria4Style =
-                    [ Anim.points tria4
-                    , Anim.fill green
-                    ]
-
-                oldLabels =
-                    model.labels
-
-                newLabels =
-                    { oldLabels
-                        | csq = Anim.interrupt [ Anim.set [ Anim.display Anim.none ] ] oldLabels.csq
-                        , asq = Anim.interrupt [ Anim.set [ Anim.display Anim.block ] ] oldLabels.asq
-                        , bsq = Anim.interrupt [ Anim.set [ Anim.display Anim.block ] ] oldLabels.bsq
-                    }
-            in
-                ( { model
-                    | tria1 = Anim.interrupt [ Anim.to newTria1Style ] model.tria1
-                    , tria2 = Anim.interrupt [ Anim.to newTria2Style ] model.tria2
-                    , tria3 = Anim.interrupt [ Anim.to newTria3Style ] model.tria3
-                    , tria4 = Anim.interrupt [ Anim.to newTria4Style ] model.tria4
-                    , labels = newLabels
-                  }
-                , Cmd.none
-                )
+        Step step ->
+            ( { model | step = step } |> makeStepFn step, Cmd.none )
 
         Animate time ->
             let
@@ -418,10 +465,10 @@ view model =
                     ]
                 ]
             , div [ Attr.class "steps" ]
-                [ span [ onClick Step0, Attr.class "step active" ] []
-                , span [ onClick Step1, Attr.class "step" ] []
-                , span [ onClick Step2, Attr.class "step" ] []
-                , span [ onClick Step3, Attr.class "step" ] []
+                [ stepView Step0 model.step
+                , stepView Step1 model.step
+                , stepView Step2 model.step
+                , stepView Step3 model.step
                 ]
             , div [ Attr.class "main" ]
                 [ div
@@ -433,6 +480,19 @@ view model =
                 ]
             ]
         ]
+
+
+stepView : Step -> Step -> Html.Html Msg
+stepView aStep currentStep =
+    let
+        stepClass =
+            "step"
+                ++ if aStep == currentStep then
+                    " active"
+                   else
+                    ""
+    in
+        span [ onClick (Step aStep), Attr.class stepClass ] []
 
 
 mainCanvas : Model -> Html.Html msg
