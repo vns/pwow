@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Browser exposing (Document)
+import Browser
 import Color.Palette exposing (darkRed, darkGreen, white)
 import Html exposing (..)
 import Html.Attributes as Attr
@@ -12,7 +12,7 @@ import List exposing (map, range)
 
 
 main =
-    Browser.document
+    Browser.element
         { init = init
         , update = update
         , subscriptions = subscriptions
@@ -393,10 +393,9 @@ tria base height color =
     ]
 
 
-view : Model -> Document Msg
+view : Model -> Html Msg
 view model =
-    { title = "Pythagorean Theorem"
-    , body =
+    div []
         [ div [ Attr.class "header" ]
             [ h1 [] [ Html.text "proofs without words" ]
             ]
@@ -424,20 +423,21 @@ view model =
                 ]
             ]
         ]
-    }
 
 
 mainCanvas : Model -> Html.Html msg
 mainCanvas model =
     div []
         [ svg
-            [ version "1.1", width "500", height "500", viewBox "0 0 700 700", stroke "#999" ]
+            [ version "1.1", width "500", height "500", viewBox "0 0 700 700", stroke "#444" ]
             [ g []
-                [ rect [ fill "white", stroke "1", x "0", y "0", width "700", height "700" ] []
-                , polygon (Anim.render model.tria2) []
-                , polygon (Anim.render model.tria3) []
-                , polygon (Anim.render model.tria4) []
-                , polygon (Anim.render model.tria1) []
+                [ rect [ fill "white", strokeWidth "2", x "0", y "0", width "700", height "700" ] []
+                , g [ strokeWidth "0" ]
+                    [ polygon (Anim.render model.tria2) []
+                    , polygon (Anim.render model.tria3) []
+                    , polygon (Anim.render model.tria4) []
+                    , polygon (Anim.render model.tria1) []
+                    ]
 
                 -- , squared
                 --     ((Anim.render model.labels.csq)
