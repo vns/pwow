@@ -1,7 +1,6 @@
 module Viviani exposing (main)
 
 import Browser
-import Color.Palette exposing (darkYellow, purple, white)
 import Html exposing (Html, div, h1, span)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
@@ -28,15 +27,102 @@ type alias Model =
     , scene : Anim.State
     , rotation1 : Anim.State
     , rotation2 : Anim.State
+    , step : Step
     }
 
 
-type Msg
-    = Step1
+type Step
+    = Step0
+    | Step1
     | Step2
-    | Step3
+
+
+type Msg
+    = Step Step
     | MouseClick Point
     | Animate Anim.Msg
+
+
+step0 : Model -> Model
+step0 model =
+    { model
+        | scene = Anim.interrupt [ Anim.to [ Anim.opacity 1 ] ] model.scene
+    }
+
+
+step1 : Model -> Model
+step1 model =
+    let
+        eqAC =
+            equilateral { start = model.eq.a, end = model.eq.c }
+                model.aPoint
+
+        center =
+            equilateralCenter eqAC
+                |> Debug.log "center"
+    in
+        { model
+            | rotation1 =
+                Anim.interrupt
+                    [ Anim.set
+                        [ Anim.transformOrigin
+                            (Anim.px center.x)
+                            (Anim.px center.y)
+                            (Anim.px 0.0)
+                        ]
+                    , Anim.to
+                        [ Anim.rotate (Anim.deg 120)
+                        ]
+
+                    -- , Anim.set [ Anim.rotate (Anim.deg 12) ]
+                    ]
+                    model.rotation1
+        }
+
+
+step2 : Model -> Model
+step2 model =
+    let
+        eqAC =
+            equilateral { start = model.eq.a, end = model.eq.c } model.aPoint
+
+        eqBC =
+            equilateral { start = model.eq.b, end = model.eq.c } model.aPoint
+
+        eqUpper =
+            equilateral { start = eqAC.a, end = eqBC.a } model.eq.c
+
+        center =
+            equilateralCenter eqUpper
+    in
+        { model
+            | rotation2 =
+                Anim.interrupt
+                    [ Anim.set
+                        [ Anim.transformOrigin
+                            (Anim.px center.x)
+                            (Anim.px center.y)
+                            (Anim.px 0.0)
+                        ]
+                    , Anim.to
+                        [ Anim.rotate (Anim.deg 120)
+                        ]
+                    ]
+                    model.rotation2
+        }
+
+
+makeStepFn : Step -> (Model -> Model)
+makeStepFn step =
+    case step of
+        Step0 ->
+            step0
+
+        Step1 ->
+            step1
+
+        Step2 ->
+            step2
 
 
 init : () -> ( Model, Cmd Msg )
@@ -53,6 +139,7 @@ init _ =
           , scene = Anim.style [ Anim.opacity 0 ]
           , rotation1 = Anim.style [ Anim.rotate (Anim.deg 0) ]
           , rotation2 = Anim.style [ Anim.rotate (Anim.deg 0) ]
+          , step = Step0
           }
         , Cmd.none
         )
@@ -78,74 +165,10 @@ subscriptions model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Step1 ->
-            ( { model
-                | scene = Anim.interrupt [ Anim.to [ Anim.opacity 1 ] ] model.scene
-              }
+        Step step ->
+            ( model |> makeStepFn step
             , Cmd.none
             )
-
-        Step2 ->
-            let
-                eqAC =
-                    equilateral { start = model.eq.a, end = model.eq.c }
-                        model.aPoint
-
-                center =
-                    equilateralCenter eqAC
-                        |> Debug.log "center"
-            in
-                ( { model
-                    | rotation1 =
-                        Anim.interrupt
-                            [ Anim.set
-                                [ Anim.transformOrigin
-                                    (Anim.px center.x)
-                                    (Anim.px center.y)
-                                    (Anim.px 0.0)
-                                ]
-                            , Anim.to
-                                [ Anim.rotate (Anim.deg 120)
-                                ]
-
-                            -- , Anim.set [ Anim.rotate (Anim.deg 12) ]
-                            ]
-                            model.rotation1
-                  }
-                , Cmd.none
-                )
-
-        Step3 ->
-            let
-                eqAC =
-                    equilateral { start = model.eq.a, end = model.eq.c } model.aPoint
-
-                eqBC =
-                    equilateral { start = model.eq.b, end = model.eq.c } model.aPoint
-
-                eqUpper =
-                    equilateral { start = eqAC.a, end = eqBC.a } model.eq.c
-
-                center =
-                    equilateralCenter eqUpper
-            in
-                ( { model
-                    | rotation2 =
-                        Anim.interrupt
-                            [ Anim.set
-                                [ Anim.transformOrigin
-                                    (Anim.px center.x)
-                                    (Anim.px center.y)
-                                    (Anim.px 0.0)
-                                ]
-                            , Anim.to
-                                [ Anim.rotate (Anim.deg 120)
-                                ]
-                            ]
-                            model.rotation2
-                  }
-                , Cmd.none
-                )
 
         MouseClick clickedPoint ->
             let
@@ -179,15 +202,28 @@ view model =
         , Attr.style "width" "700px"
         , Attr.style "height" "750px"
         ]
-        [ h1 [ Attr.style "cursor" "pointer" ]
-            [ span [ onClick Step1, Attr.style "margin-right" "30px" ] [ text "Step 1" ]
-            , span [ onClick Step2, Attr.style "margin-right" "30px" ] [ text "Step 2" ]
-            , span [ onClick Step3, Attr.style "margin-right" "30px" ] [ text "Step 3" ]
+        [ div [ Attr.class "steps" ]
+            [ stepView Step0 model.step
+            , stepView Step1 model.step
+            , stepView Step2 model.step
             ]
         , div
             [ Attr.style "cursor" "crosshair" ]
             [ mainCanvas model ]
         ]
+
+
+stepView : Step -> Step -> Html.Html Msg
+stepView aStep currentStep =
+    let
+        stepClass =
+            "step"
+                ++ if aStep == currentStep then
+                    " active"
+                   else
+                    ""
+    in
+        span [ onClick (Step aStep), Attr.class stepClass ] []
 
 
 onClickWithOffset : (Point -> msg) -> Attribute msg
