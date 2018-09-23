@@ -448,37 +448,18 @@ from Greek theorema "spectacle, sight," in Euclid "proposition to be proved," li
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ div [ Attr.class "header" ]
-            [ h1 [] [ Html.text "proofs without words" ]
-            , div [ Attr.class "definition" ]
-                [ strong [] [ Html.text "theorem (n.): " ]
-                , Html.text theoremDef
-                ]
+    div
+        [ Attr.class "presentation" ]
+        [ div [ Attr.class "steps" ]
+            [ stepView Step0 model.step
+            , stepView Step1 model.step
+            , stepView Step2 model.step
+            , stepView Step3 model.step
             ]
-        , div [ Attr.class "content" ]
-            [ div [ Attr.class "sidebar" ]
-                [ ul []
-                    [ li [] [ Html.a [ Attr.href "#", Attr.class "active" ] [ Html.text "pythagorean theorem" ] ]
-                    , li [] [ Html.a [ Attr.href "#" ] [ Html.text "viviani's theorem" ] ]
-                    , li [] [ Html.a [ Attr.href "#" ] [ Html.text "infinite series" ] ]
-                    ]
-                ]
-            , div [ Attr.class "steps" ]
-                [ stepView Step0 model.step
-                , stepView Step1 model.step
-                , stepView Step2 model.step
-                , stepView Step3 model.step
-                ]
-            , div [ Attr.class "main" ]
-                [ div
-                    [ Attr.class "canvas-container"
-                    , Attr.style "width" "500px"
-                    , Attr.style "height" "500px"
-                    ]
-                    [ mainCanvas model ]
-                ]
+        , div
+            [ Attr.class "canvas-container"
             ]
+            [ mainCanvas model ]
         ]
 
 

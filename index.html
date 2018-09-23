@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Main</title>
+  <link rel="stylesheet" href="/elements.css">
+  <script src="/main.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>proofs without words</h1>
+        <div class="definition">
+            <strong>theorem (n.): </strong>
+            from Greek theorema "spectacle, sight," in Euclid
+            "proposition to be proved," literally "that which
+            is looked at," from theorein "to look at, behold"
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="sidebar">
+            <ul>
+                <li><a href="#" class="active">pythagorean theorem</a></li>
+                <li><a href="#">viviani's theorem</a></li>
+                <li><a href="#">infinite series</a></li>
+            </ul>
+        </div>
+        <main id="elm">
+        </main>
+    </div>
+    <script>
+        var app = Elm.Main.init({
+            node: document.getElementById('elm')
+        });
+    </script>
+</body>
+</html>
