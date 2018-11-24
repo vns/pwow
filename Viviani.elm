@@ -46,7 +46,8 @@ type Msg
 step0 : Model -> Model
 step0 model =
     { model
-        | scene = Anim.interrupt [ Anim.to [ Anim.opacity 1 ] ] model.scene
+        | scene =
+            Anim.interrupt [ Anim.to [ Anim.opacity 1 ] ] model.scene
     }
 
 
@@ -198,17 +199,14 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div
-        [ Attr.style "margin" "200px auto"
-        , Attr.style "width" "700px"
-        , Attr.style "height" "750px"
-        ]
+        [ Attr.class "presentation" ]
         [ div [ Attr.class "steps" ]
             [ stepView Step0 model.step
             , stepView Step1 model.step
             , stepView Step2 model.step
             ]
         , div
-            [ Attr.style "cursor" "crosshair" ]
+            [ Attr.class "canvas-container" ]
             [ mainCanvas model ]
         ]
 
