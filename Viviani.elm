@@ -43,12 +43,76 @@ type Msg
     | Animate Anim.Msg
 
 
+init : () -> ( Model, Cmd Msg )
+init _ =
+    let
+        aPoint =
+            { x = 300, y = 400 }
+
+        eq =
+            initEquilateral
+    in
+        ( { eq = eq
+          , aPoint = aPoint
+          , scene = Anim.style [ Anim.opacity 1 ]
+          , rotation1 = Anim.style [ Anim.rotate (Anim.deg 0) ]
+          , rotation2 = Anim.style [ Anim.rotate (Anim.deg 0) ]
+          , step = Step0
+          }
+        , Cmd.none
+        )
+
+
 step0 : Model -> Model
 step0 model =
-    { model
-        | scene =
-            Anim.interrupt [ Anim.to [ Anim.opacity 1 ] ] model.scene
-    }
+    let
+        eqAC =
+            equilateral { start = model.eq.a, end = model.eq.c }
+                model.aPoint
+
+        eqBC =
+            equilateral { start = model.eq.b, end = model.eq.c } model.aPoint
+
+        eqUpper =
+            equilateral { start = eqAC.a, end = eqBC.a } model.eq.c
+
+        center1 =
+            equilateralCenter eqAC
+
+        center2 =
+            equilateralCenter eqUpper
+    in
+        { model
+            | step = Step0
+            , scene =
+                Anim.interrupt [ Anim.to [ Anim.opacity 1 ] ] model.scene
+            , rotation1 =
+                Anim.interrupt
+                    [ Anim.set
+                        [ Anim.transformOrigin
+                            (Anim.px center1.x)
+                            (Anim.px center1.y)
+                            (Anim.px 0.0)
+                        ]
+                    , Anim.to
+                        [ Anim.rotate (Anim.deg 0)
+                        ]
+                    ]
+                    model.rotation1
+            , rotation2 =
+                Anim.interrupt
+                    [ Anim.set
+                        [ Anim.transformOrigin
+                            (Anim.px center2.x)
+                            (Anim.px center2.y)
+                            (Anim.px 0.0)
+                        ]
+                    , Anim.to
+                        [ Anim.rotate (Anim.deg 0)
+                        ]
+                    ]
+                    model.rotation2
+        }
 
 
 step1 : Model -> Model
@@ -58,26 +122,46 @@ step1 model =
             equilateral { start = model.eq.a, end = model.eq.c }
                 model.aPoint
 
-        center =
+        eqBC =
+            equilateral { start = model.eq.b, end = model.eq.c } model.aPoint
+
+        eqUpper =
+            equilateral { start = eqAC.a, end = eqBC.a } model.eq.c
+
+        center1 =
             equilateralCenter eqAC
-                |> Debug.log "center"
+
+        center2 =
+            equilateralCenter eqUpper
     in
         { model
-            | rotation1 =
+            | step = Step1
+            , rotation1 =
                 Anim.interrupt
                     [ Anim.set
                         [ Anim.transformOrigin
-                            (Anim.px center.x)
-                            (Anim.px center.y)
+                            (Anim.px center1.x)
+                            (Anim.px center1.y)
                             (Anim.px 0.0)
                         ]
                     , Anim.to
                         [ Anim.rotate (Anim.deg 120)
                         ]
-
-                    -- , Anim.set [ Anim.rotate (Anim.deg 12) ]
                     ]
                     model.rotation1
+            , rotation2 =
+                Anim.interrupt
+                    [ Anim.set
+                        [ Anim.transformOrigin
+                            (Anim.px center2.x)
+                            (Anim.px center2.y)
+                            (Anim.px 0.0)
+                        ]
+                    , Anim.to
+                        [ Anim.rotate (Anim.deg 0)
+                        ]
+                    ]
+                    model.rotation2
         }
 
 
@@ -85,7 +169,8 @@ step2 : Model -> Model
 step2 model =
     let
         eqAC =
-            equilateral { start = model.eq.a, end = model.eq.c } model.aPoint
+            equilateral { start = model.eq.a, end = model.eq.c }
+                model.aPoint
 
         eqBC =
             equilateral { start = model.eq.b, end = model.eq.c } model.aPoint
@@ -93,16 +178,33 @@ step2 model =
         eqUpper =
             equilateral { start = eqAC.a, end = eqBC.a } model.eq.c
 
-        center =
+        center1 =
+            equilateralCenter eqAC
+
+        center2 =
             equilateralCenter eqUpper
     in
         { model
-            | rotation2 =
+            | step = Step2
+            , rotation1 =
                 Anim.interrupt
                     [ Anim.set
                         [ Anim.transformOrigin
-                            (Anim.px center.x)
-                            (Anim.px center.y)
+                            (Anim.px center1.x)
+                            (Anim.px center1.y)
+                            (Anim.px 0.0)
+                        ]
+                    , Anim.to
+                        [ Anim.rotate (Anim.deg 120)
+                        ]
+                    ]
+                    model.rotation1
+            , rotation2 =
+                Anim.interrupt
+                    [ Anim.set
+                        [ Anim.transformOrigin
+                            (Anim.px center2.x)
+                            (Anim.px center2.y)
                             (Anim.px 0.0)
                         ]
                     , Anim.to
@@ -124,26 +226,6 @@ makeStepFn step =
 
         Step2 ->
             step2
-
-
-init : () -> ( Model, Cmd Msg )
-init _ =
-    let
-        aPoint =
-            { x = 300, y = 400 }
-
-        eq =
-            initEquilateral
-    in
-        ( { eq = eq
-          , aPoint = aPoint
-          , scene = Anim.style [ Anim.opacity 0 ]
-          , rotation1 = Anim.style [ Anim.rotate (Anim.deg 0) ]
-          , rotation2 = Anim.style [ Anim.rotate (Anim.deg 0) ]
-          , step = Step0
-          }
-        , Cmd.none
-        )
 
 
 initEquilateral : Equilateral
@@ -177,7 +259,10 @@ update msg model =
                     pointInEquilateral clickedPoint model.eq
 
                 newPoint =
-                    if pointInEquilateral clickedPoint model.eq then
+                    if
+                        (pointInEquilateral clickedPoint model.eq)
+                            && (model.step == Step0)
+                    then
                         clickedPoint
                     else
                         model.aPoint
