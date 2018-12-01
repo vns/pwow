@@ -1,4 +1,4 @@
-module Viviani exposing (main)
+module Main exposing (main)
 
 import Browser
 import Html exposing (Html, div, h1, span)
