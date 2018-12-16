@@ -94,7 +94,9 @@ view model =
     div
         [ Attr.class "presentation" ]
         [ div
-            [ Attr.class "canvas-container" ]
+            [ Attr.class "canvas-container"
+            , Attr.style "margin" "0"
+            ]
             [ mainCanvas model ]
         ]
 

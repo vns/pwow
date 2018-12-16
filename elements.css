@@ -4,7 +4,7 @@ body {
     font-family: helvetica, sans-serif;
 }
 
-h1 a {
+h1 a, h1 a:visited, h1:active {
     text-decoration: none;
     color: black;
 }
