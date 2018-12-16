@@ -43,6 +43,17 @@ h1 a {
     color: #4A90E2;
 }
 
+#fwd:hover, #bwd:hover {
+    cursor: pointer;
+}
+
+#fwd:hover {
+}
+
+#less:hover, #more:hover {
+    cursor: pointer;
+}
+
 .steps {
     width: 30px;
     display: flex;

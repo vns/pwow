@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Main</title>
+  <link rel="stylesheet" href="/elements.css">
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+    <script src="/sum-of-odd-integers/main.js"></script>
+
+</head>
+<body>
+    <div class="header">
+        <h1><a href="/">proofs without words</a></h1>
+        <div class="definition">
+            \( 1 + 3 + 5 + ... + (2n - 1) = n^2 \)
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="sidebar">
+            <ul>
+                <li><a href="/pythagorean-theorem">pythagorean theorem</a></li>
+                <li><a href="/vivianis-theorem/">viviani's theorem</a></li>
+                <li><a href="/sum-of-odd-integers/">sum of odd integers</a></li>
+            </ul>
+        </div>
+        <main id="elm">
+        </main>
+    </div>
+    <script>
+        var app = Elm.Main.init({
+            node: document.getElementById('elm')
+        });
+    </script>
+</body>
+</html>
