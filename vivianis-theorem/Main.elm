@@ -564,40 +564,41 @@ mainCanvas model =
         prBC =
             projection { start = eq.b, end = eq.c } aPoint
     in
-        div []
+        div
+            [ Attr.style "margin-top" "-90px"
+            ]
             [ svg
                 [ version "1.1", width "750", height "750", viewBox "0 0 750 750", onClickWithOffset MouseClick ]
                 [ g []
-                    [ circle
-                        [ cx (String.fromFloat aPoint.x)
-                        , cy (String.fromFloat aPoint.y)
-                        , r "2"
-                        , fill "black"
-                        ]
-                        []
-                    , polygon
+                    [ polygon
                         [ points (equilateralAsString model.eq)
                         , fill "none"
-                        , strokeWidth "1"
-                        , stroke "black"
+                        , strokeWidth "0"
+                        , fill "#eee"
+                        ]
+                        []
+                    , circle
+                        [ cx (String.fromFloat aPoint.x)
+                        , cy (String.fromFloat aPoint.y)
+                        , r "3"
+                        , fill "#888"
                         ]
                         []
                     , g
                         (Anim.render model.scene)
                         [ polygon
                             [ points (equilateralAsString eqAB)
-                            , fill "none"
-                            , strokeWidth "1"
-                            , stroke "black"
+                            , strokeWidth "0"
+                            , fill "#4A90E2"
                             ]
                             []
                         , line
                             [ x1 (String.fromFloat aPoint.x)
-                            , y1 (String.fromFloat aPoint.y)
+                            , y1 (String.fromFloat (aPoint.y + 4))
                             , x2 (String.fromFloat prAB.x)
-                            , y2 (String.fromFloat prAB.y)
+                            , y2 (String.fromFloat (prAB.y - 2))
                             , strokeWidth "1"
-                            , stroke "blue"
+                            , stroke "#eee"
                             ]
                             []
                         ]
@@ -609,9 +610,8 @@ mainCanvas model =
                             [ g (Anim.render model.rotation1)
                                 [ polygon
                                     [ points (equilateralAsString eqAC)
-                                    , fill "none"
-                                    , strokeWidth "1"
-                                    , stroke "black"
+                                    , strokeWidth "0"
+                                    , fill "#B6D6CC"
                                     ]
                                     []
                                 , line
@@ -619,7 +619,9 @@ mainCanvas model =
                                     , y1 (String.fromFloat aPoint.y)
                                     , x2 (String.fromFloat prAC.x)
                                     , y2 (String.fromFloat prAC.y)
-                                    , stroke "red"
+                                    , stroke "#eee"
+                                    , strokeWidth "1"
+                                    , strokeLinecap "butt"
                                     ]
                                     []
                                 ]
@@ -627,8 +629,8 @@ mainCanvas model =
                                 [ polygon
                                     [ points (equilateralAsString eqBC)
                                     , fill "none"
-                                    , strokeWidth "1"
-                                    , stroke "black"
+                                    , strokeWidth "0"
+                                    , fill "#9BC53D"
                                     ]
                                     []
                                 , line
@@ -636,15 +638,16 @@ mainCanvas model =
                                     , y1 (String.fromFloat aPoint.y)
                                     , x2 (String.fromFloat prBC.x)
                                     , y2 (String.fromFloat prBC.y)
-                                    , stroke "orange"
+                                    , stroke "#eee"
+                                    , strokeWidth "1"
+                                    , strokeLinecap "butt"
                                     ]
                                     []
                                 ]
                             , polygon
                                 [ points (equilateralAsString eqUpper)
                                 , fill "none"
-                                , strokeWidth "1"
-                                , stroke "black"
+                                , strokeWidth "0"
                                 ]
                                 []
                             ]
