@@ -71,10 +71,28 @@ update msg model =
         Tick dt ->
             ( { model
                 | time = dt + model.time
-                , angle = model.angle + model.time / 5000
+                , angle = model.angle + pi / 360
               }
             , Cmd.none
             )
+
+
+camera : Float -> Mat4
+camera ratio =
+    let
+        eye =
+            vec3 0 0 10
+
+        center =
+            vec3 0 0 0
+    in
+        (Mat4.makeLookAt eye center Vec3.j)
+            |> Mat4.mul (Mat4.makePerspective 45 ratio 0.01 100)
+
+
+light : Vec3
+light =
+    vec3 -1 1 10 |> Vec3.normalize
 
 
 view : Model -> Html msg
@@ -89,7 +107,8 @@ view model =
             fragmentShader
             mesh
             (Uniforms
-                (vec3 0.2 0.2 1)
+                -- (vec3 (0x9B / 0xFF) (0xC5 / 0xFF) (0x3D / 0xFF))
+                (vec3 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF))
                 (camera 1)
                 (Mat4.makeRotate model.angle (vec3 0 1 0))
                 light
@@ -102,93 +121,152 @@ attributes vec =
     Attributes vec (vec |> Vec3.normalize)
 
 
-sphereFn phi theta =
-    vec3 (sin theta * cos phi) (sin theta * sin phi) (cos theta)
+sphere u v =
+    let
+        maxTheta =
+            pi
+
+        maxPhi =
+            2 * pi
+
+        theta =
+            u * maxTheta
+
+        phi =
+            v * maxPhi
+    in
+        vec3 (sin theta * cos phi) (sin theta * sin phi) (cos theta)
+
+
+mobius u v =
+    let
+        phi =
+            u - 0.5
+
+        theta =
+            2 * pi * v
+
+        a =
+            2
+    in
+        vec3
+            ((cos theta) * (a + phi * cos (theta / 2)))
+            ((sin theta) * (a + phi * cos (theta / 2)))
+            (phi * sin (theta / 2))
+
+
+mobius3d u0 v0 =
+    let
+        u =
+            u0 * pi * 2
+
+        phi =
+            u / 2
+
+        v =
+            v0 * pi * 2
+
+        major =
+            2.25
+
+        a =
+            0.125
+
+        b =
+            0.65
+
+        x =
+            (a * (cos v) * (cos phi) - b * (sin v) * (sin phi))
+
+        z =
+            (a * (cos v) * (sin phi) + b * (sin v) * (cos phi))
+    in
+        vec3
+            ((major + x) * (cos u))
+            ((major + x) * (sin u))
+            z
 
 
 mesh =
     let
         ( attr, indices ) =
-            triangles sphereFn
+            triangles mobius3d
     in
         WebGL.indexedTriangles attr indices
 
 
 triangles fn =
     let
-        phlen =
-            2 * pi
+        slices =
+            100
 
-        thlen =
-            pi
+        stacks =
+            100
 
-        width =
-            25
-
-        height =
-            25
+        eps =
+            0.0001
     in
-        range 0 height
+        range 0 stacks
             |> map
                 (\i ->
-                    range 0 width
+                    range 0 slices
                         |> map
                             (\j ->
                                 let
-                                    phi =
-                                        ((toFloat j / width) * phlen)
+                                    u =
+                                        toFloat j / slices
 
-                                    theta =
-                                        ((toFloat i / height) * thlen)
+                                    v =
+                                        toFloat i / stacks
+
+                                    p0 =
+                                        fn u v
+
+                                    pu =
+                                        if (u - eps >= 0) then
+                                            Vec3.sub p0 (fn (u - eps) v)
+                                        else
+                                            Vec3.sub (fn (u + eps) v) p0
+
+                                    pv =
+                                        if (v - eps >= 0) then
+                                            Vec3.sub p0 (fn u (v - eps))
+                                        else
+                                            Vec3.sub (fn u (v + eps)) p0
+
+                                    normal =
+                                        Vec3.cross pu pv |> Vec3.normalize
                                 in
-                                    ( attributes (fn phi theta), indexes width height i j )
+                                    ( Attributes p0 normal, indexes slices stacks i j )
                             )
                 )
             |> concatMap identity
             |> foldl (\( v, i ) ( av, ai ) -> ( v :: av, i ++ ai )) ( [], [] )
 
 
-indexes width height i j =
+indexes slices stacks i j =
     let
-        w =
-            width + 1
+        sliceCount =
+            slices + 1
 
-        h =
-            height + 1
+        a =
+            i * sliceCount + j
+
+        b =
+            i * sliceCount + j + 1
+
+        c =
+            (i + 1) * sliceCount + j + 1
+
+        d =
+            (i + 1) * sliceCount + j
     in
-        if (i >= height) || (j >= height) then
+        if (i >= stacks) || (j >= slices) then
             []
         else
-            [ ( i * w + j
-              , i * w + j + 1
-              , (i + 1) * w + j
-              )
-            , ( i * w + j + 1
-              , (i + 1) * w + j
-              , (i + 1) * w + j + 1
-              )
+            [ ( a, b, d )
+            , ( b, c, d )
             ]
-
-
-camera : Float -> Mat4
-camera ratio =
-    let
-        c =
-            0
-
-        eye =
-            vec3 0 0 3
-
-        center =
-            vec3 0 0 0
-    in
-        (Mat4.makeLookAt eye center Vec3.j)
-            |> Mat4.mul (Mat4.makePerspective 45 ratio 0.01 100)
-
-
-light : Vec3
-light =
-    vec3 -1 1 3 |> Vec3.normalize
 
 
 vertexShader : Shader Attributes Uniforms Varying
@@ -206,7 +284,7 @@ vertexShader =
             highp float ambientLight = 0.5;
             highp float directionalLight = 0.5;
             gl_Position = camera * rotation * vec4(position, 1.0);
-            vlighting = ambientLight + max(dot((rotation * vec4(normal, 1.0)).xyz, light), 0.0) * directionalLight;
+            vlighting = ambientLight + dot((rotation * vec4(normal, 1.0)).xyz, light) * directionalLight;
         }
 
 
@@ -222,6 +300,6 @@ fragmentShader =
         uniform vec3 color;
 
         void main () {
-            gl_FragColor = vec4(color * vlighting, 1.0);
+            gl_FragColor = vec4(color * vlighting, 1);
         }
     |]
