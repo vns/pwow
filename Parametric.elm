@@ -5,6 +5,7 @@ import Browser.Events exposing (onAnimationFrameDelta)
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
 import List exposing (..)
+import List.Extra exposing (zip, last)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Time
@@ -87,7 +88,7 @@ camera : Float -> Mat4
 camera ratio =
     let
         eye =
-            vec3 0 3 10
+            vec3 0 0 10
 
         center =
             vec3 0 0 0
@@ -98,7 +99,7 @@ camera ratio =
 
 light : Vec3
 light =
-    vec3 -1 1 10 |> Vec3.normalize
+    vec3 0 3 0 |> Vec3.normalize
 
 
 view : Model -> Html msg
@@ -108,26 +109,59 @@ view model =
         , height 700
         , style "display" "block"
         ]
+        -- [ WebGL.entity
+        --     vertexShader
+        --     fragmentShader
+        --     model.sphere
+        --     (Uniforms
+        --         -- (vec3 (0x9B / 0xFF) (0xC5 / 0xFF) (0x3D / 0xFF))
+        --         (vec3 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF))
+        --         (camera 1)
+        --         (Mat4.makeTranslate (vec3 0.0 1.5 0.0)
+        --             |> Mat4.mul
+        --                 (Mat4.makeRotate model.angle (vec3 0 1 0))
+        --             |> Mat4.mul
+        --                 (Mat4.makeScale (vec3 0.6 0.6 0.6))
+        --         )
+        --         light
+        --     )
         [ WebGL.entity
             vertexShader
             fragmentShader
-            model.mobius
+            wireframeCone
             (Uniforms
-                -- (vec3 (0x9B / 0xFF) (0xC5 / 0xFF) (0x3D / 0xFF))
-                (vec3 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF))
+                (vec3 (0xCC / 0xFF) (0xCC / 0xFF) (0xCC / 0xFF))
+                -- (vec3 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF))
                 (camera 1)
-                (Mat4.makeRotate model.angle (vec3 0 1 0))
+                (Mat4.makeRotate 0 (vec3 0 1 0))
                 light
             )
         , WebGL.entity
             vertexShader
             fragmentShader
-            model.sphere
+            (normalizeBasic |> (plane |> mesh))
             (Uniforms
-                (vec3 (0x9B / 0xFF) (0xC5 / 0xFF) (0x3D / 0xFF))
+                (vec3 (0xCC / 0xFF) (0xCC / 0xFF) (0xCC / 0xFF))
                 -- (vec3 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF))
                 (camera 1)
-                (Mat4.makeRotate -model.angle (vec3 0 1 0))
+                (Mat4.makeRotate (pi / 6) (vec3 0 0 1)
+                    |> Mat4.mul
+                        (Mat4.makeRotate (pi / 6) (vec3 1 0 0))
+                )
+                light
+            )
+        , WebGL.entity
+            vertexShader
+            fragmentShader
+            wireframeEllipse
+            (Uniforms
+                (vec3 (0xEF / 0xFF) (0xEF / 0xFF) (0xEF / 0xFF))
+                -- (vec3 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF))
+                (camera 1)
+                (Mat4.makeRotate (pi / 6) (vec3 0 0 1)
+                    |> Mat4.mul
+                        (Mat4.makeRotate (pi / 6) (vec3 1 0 0))
+                )
                 light
             )
         ]
@@ -136,6 +170,20 @@ view model =
 attributes : Vec3 -> Attributes
 attributes vec =
     Attributes vec (vec |> Vec3.normalize)
+
+
+plane u v =
+    let
+        a =
+            5
+
+        b =
+            5
+    in
+        vec3
+            (-(a * u) + a / 2)
+            0
+            (-(b * v) + b / 2)
 
 
 sphere u v =
@@ -204,22 +252,56 @@ mobius3d u0 v0 =
             z
 
 
+ellipse =
+    let
+        a =
+            1.5
+
+        b =
+            1
+
+        segmentCount =
+            25
+
+        thetaLength =
+            2 * pi
+    in
+        range 0 segmentCount
+            |> map
+                (\i ->
+                    let
+                        x =
+                            toFloat i / segmentCount
+
+                        theta =
+                            x * thetaLength - 0.00001
+
+                        p0 =
+                            vec3
+                                (a * cos theta)
+                                (0)
+                                (b * sin theta)
+                    in
+                        Attributes p0 (p0 |> Vec3.normalize)
+                )
+
+
 cylinder =
     let
         heightSegments =
-            5
+            1
 
         radialSegments =
-            30
+            25
 
         height =
-            2
+            6
 
         halfHeight =
             height / 2
 
         radiusBottom =
-            1
+            2
 
         radiusTop =
             0
@@ -263,19 +345,19 @@ cylinder =
                                         normal =
                                             vec3 sinTheta slope cosTheta |> Vec3.normalize
                                     in
-                                        ( Attributes p0 normal, indexes radialSegments heightSegments y x )
+                                        Attributes p0 normal
+                                 -- ( Attributes p0 normal, indexes radialSegments heightSegments y x )
                                 )
                 )
-            |> concatMap identity
-            |> foldl (\( v, i ) ( av, ai ) -> ( v :: av, i ++ ai )) ( [], [] )
 
 
-cylinderMesh =
-    let
-        ( attr, indices ) =
-            cylinder
-    in
-        WebGL.indexedTriangles attr indices
+
+-- cylinderMesh =
+--     let
+--         ( attr, indices ) =
+--             cylinder
+--     in
+--         WebGL.indexedTriangles attr indices
 
 
 mesh fn normalize =
@@ -289,10 +371,10 @@ mesh fn normalize =
 triangles fn normalize =
     let
         slices =
-            100
+            3
 
         stacks =
-            100
+            3
     in
         range 0 stacks
             |> map
@@ -372,6 +454,45 @@ indexes slices stacks i j =
             ]
 
 
+makeTuples fn list =
+    case list of
+        a :: b :: rest ->
+            fn a b :: (makeTuples fn <| b :: rest)
+
+        _ ->
+            []
+
+
+wireframeCone : Mesh Attributes
+wireframeCone =
+    let
+        vertices =
+            cylinder
+
+        sideLines =
+            vertices
+                |> makeTuples zip
+                |> concatMap identity
+
+        bottomLines =
+            case last vertices of
+                Just bottom ->
+                    makeTuples (\x y -> ( x, y )) bottom
+
+                Nothing ->
+                    []
+    in
+        append sideLines bottomLines
+            |> WebGL.lines
+
+
+wireframeEllipse : Mesh Attributes
+wireframeEllipse =
+    ellipse
+        |> makeTuples (\x y -> ( x, y ))
+        |> WebGL.lines
+
+
 vertexShader : Shader Attributes Uniforms Varying
 vertexShader =
     [glsl|
@@ -384,7 +505,7 @@ vertexShader =
         varying highp float vlighting;
 
         void main () {
-            highp float ambientLight = 0.5;
+            highp float ambientLight = 0.7;
             highp float directionalLight = 0.5;
             gl_Position = camera * rotation * vec4(position, 1.0);
             vlighting = ambientLight + dot((rotation * vec4(normal, 1.0)).xyz, light) * directionalLight;
