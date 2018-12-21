@@ -185,20 +185,11 @@ cylinder =
 
 
 makeTuples fn list =
-    case List.head list of
-        Just first ->
-            let
-                tail =
-                    Maybe.withDefault [] (List.tail list)
-            in
-                case List.head tail of
-                    Just second ->
-                        [ fn first second ] ++ (makeTuples fn tail)
+    case list of
+        a :: b :: rest ->
+            fn a b :: (makeTuples fn <| b :: rest)
 
-                    Nothing ->
-                        []
-
-        Nothing ->
+        _ ->
             []
 
 
