@@ -9,6 +9,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Time
 import WebGL exposing (Mesh, Shader)
+import WebGL.Settings
 
 
 type Msg
@@ -18,6 +19,8 @@ type Msg
 type alias Model =
     { time : Float
     , angle : Float
+    , mobius : Mesh Attributes
+    , sphere : Mesh Attributes
     }
 
 
@@ -54,6 +57,8 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { time = 0
       , angle = 0
+      , mobius = normalizeFDiffs |> (mobius3d |> mesh)
+      , sphere = normalizeBasic |> (sphere |> mesh)
       }
     , Cmd.none
     )
@@ -62,7 +67,8 @@ init _ =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ onAnimationFrameDelta ((\dt -> dt / 1000) >> Tick) ]
+        [ onAnimationFrameDelta ((\dt -> dt / 1000) >> Tick)
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -71,7 +77,7 @@ update msg model =
         Tick dt ->
             ( { model
                 | time = dt + model.time
-                , angle = model.angle + pi / 360
+                , angle = model.angle + pi / 180
               }
             , Cmd.none
             )
@@ -81,7 +87,7 @@ camera : Float -> Mat4
 camera ratio =
     let
         eye =
-            vec3 0 0 10
+            vec3 0 3 10
 
         center =
             vec3 0 0 0
@@ -98,19 +104,30 @@ light =
 view : Model -> Html msg
 view model =
     WebGL.toHtml
-        [ width 1000
-        , height 1000
+        [ width 700
+        , height 700
         , style "display" "block"
         ]
         [ WebGL.entity
             vertexShader
             fragmentShader
-            mesh
+            model.mobius
             (Uniforms
                 -- (vec3 (0x9B / 0xFF) (0xC5 / 0xFF) (0x3D / 0xFF))
                 (vec3 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF))
                 (camera 1)
                 (Mat4.makeRotate model.angle (vec3 0 1 0))
+                light
+            )
+        , WebGL.entity
+            vertexShader
+            fragmentShader
+            model.sphere
+            (Uniforms
+                (vec3 (0x9B / 0xFF) (0xC5 / 0xFF) (0x3D / 0xFF))
+                -- (vec3 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF))
+                (camera 1)
+                (Mat4.makeRotate -model.angle (vec3 0 1 0))
                 light
             )
         ]
@@ -187,24 +204,95 @@ mobius3d u0 v0 =
             z
 
 
-mesh =
+cylinder =
+    let
+        heightSegments =
+            5
+
+        radialSegments =
+            30
+
+        height =
+            2
+
+        halfHeight =
+            height / 2
+
+        radiusBottom =
+            1
+
+        radiusTop =
+            0
+
+        slope =
+            (radiusBottom - radiusTop) / height
+
+        thetaLength =
+            2 * pi
+    in
+        range 0 heightSegments
+            |> map
+                (\y ->
+                    let
+                        v =
+                            toFloat y / heightSegments
+
+                        radius =
+                            v * (radiusBottom - radiusTop) + radiusTop
+                    in
+                        range 0 radialSegments
+                            |> map
+                                (\x ->
+                                    let
+                                        u =
+                                            (toFloat x / radialSegments)
+
+                                        theta =
+                                            (u * thetaLength - 0.00001)
+
+                                        sinTheta =
+                                            sin theta
+
+                                        cosTheta =
+                                            cos theta
+
+                                        p0 =
+                                            vec3 (radius * sinTheta) (-v * height + halfHeight) (radius * cosTheta)
+                                                |> Debug.log "p0"
+
+                                        normal =
+                                            vec3 sinTheta slope cosTheta |> Vec3.normalize
+                                    in
+                                        ( Attributes p0 normal, indexes radialSegments heightSegments y x )
+                                )
+                )
+            |> concatMap identity
+            |> foldl (\( v, i ) ( av, ai ) -> ( v :: av, i ++ ai )) ( [], [] )
+
+
+cylinderMesh =
     let
         ( attr, indices ) =
-            triangles mobius3d
+            cylinder
     in
         WebGL.indexedTriangles attr indices
 
 
-triangles fn =
+mesh fn normalize =
+    let
+        ( attr, indices ) =
+            triangles fn normalize
+    in
+        WebGL.indexedTriangles attr indices
+
+
+triangles fn normalize =
     let
         slices =
             100
 
         stacks =
             100
-
-        eps =
-            0.0001
     in
         range 0 stacks
             |> map
@@ -222,26 +310,41 @@ triangles fn =
                                     p0 =
                                         fn u v
 
-                                    pu =
-                                        if (u - eps >= 0) then
-                                            Vec3.sub p0 (fn (u - eps) v)
-                                        else
-                                            Vec3.sub (fn (u + eps) v) p0
-
-                                    pv =
-                                        if (v - eps >= 0) then
-                                            Vec3.sub p0 (fn u (v - eps))
-                                        else
-                                            Vec3.sub (fn u (v + eps)) p0
-
                                     normal =
-                                        Vec3.cross pu pv |> Vec3.normalize
+                                        normalize fn u v
                                 in
                                     ( Attributes p0 normal, indexes slices stacks i j )
                             )
                 )
             |> concatMap identity
             |> foldl (\( v, i ) ( av, ai ) -> ( v :: av, i ++ ai )) ( [], [] )
+
+
+normalizeFDiffs fn u v =
+    let
+        p0 =
+            fn u v
+
+        eps =
+            0.00001
+
+        pu =
+            if (u - eps >= 0) then
+                Vec3.sub p0 (fn (u - eps) v)
+            else
+                Vec3.sub (fn (u + eps) v) p0
+
+        pv =
+            if (v - eps >= 0) then
+                Vec3.sub p0 (fn u (v - eps))
+            else
+                Vec3.sub (fn u (v + eps)) p0
+    in
+        Vec3.cross pu pv |> Vec3.normalize
+
+
+normalizeBasic fn u v =
+    fn u v |> Vec3.normalize
 
 
 indexes slices stacks i j =
@@ -300,6 +403,6 @@ fragmentShader =
         uniform vec3 color;
 
         void main () {
-            gl_FragColor = vec4(color * vlighting, 1);
+            gl_FragColor = vec4(color * vlighting, 1.0);
         }
     |]
