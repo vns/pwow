@@ -7,6 +7,7 @@ import Html.Attributes exposing (width, height, style)
 import List exposing (..)
 import List.Extra exposing (zip, last)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Matrix3 as Mat4 exposing (Mat3)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Time
 import WebGL exposing (Mesh, Shader)

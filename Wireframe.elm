@@ -11,6 +11,8 @@ import WebGL exposing (Mesh, Shader)
 import List exposing (..)
 import List.Extra exposing (zip, last)
 import Maybe
+import Plane exposing (Plane)
+import Cone exposing (Cone)
 
 
 type Msg
@@ -20,6 +22,7 @@ type Msg
 type alias Model =
     { time : Float
     , angle : Float
+    , cone : Mesh Vertex
     }
 
 
@@ -42,6 +45,8 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { time = 0
       , angle = 0
+      , cone =
+            (coneMesh aCone)
       }
     , Cmd.none
     )
@@ -70,7 +75,7 @@ camera : Float -> Mat4
 camera ratio =
     let
         eye =
-            vec3 0 3 10
+            vec3 4 3 10
 
         center =
             vec3 0 0 0
@@ -81,47 +86,101 @@ camera ratio =
 
 light : Vec3
 light =
-    vec3 -1 1 10 |> Vec3.normalize
+    vec3 -1 1 3 |> Vec3.normalize
 
 
-mesh : Mesh Vertex
-mesh =
+aPlane : Plane
+aPlane =
+    Plane (vec3 -1.0 2.5 1.0) (vec3 0.0 0.0 0.0)
+
+
+aLine : Plane.Line
+aLine =
+    Plane.Line (vec3 0.0 5.0 0.0) (vec3 1.0 1.0 1.0)
+
+
+aCone : Cone
+aCone =
+    { vertex = vec3 0.0 2.5 0.0
+    , axis = vec3 0.0 -1.0 0.0
+    , height = 5.0
+    , angle = pi / 6
+    }
+
+
+lineMesh : Plane.Line -> Mesh Vertex
+lineMesh line =
     let
-        vertices =
-            cylinder
-
-        sideLines =
-            vertices
-                |> makeTuples zip
-                |> concatMap identity
-
-        bottomLines =
-            case last vertices of
-                Just bottom ->
-                    makeTuples (\x y -> ( x, y )) bottom
-
-                Nothing ->
-                    []
+        offset =
+            Vec3.scale 3.0 line.direction
     in
-        append sideLines bottomLines
+        WebGL.lines
+            [ ( Vertex (Vec3.add line.origin offset)
+              , Vertex (Vec3.sub line.origin offset)
+              )
+            ]
+
+
+planeMesh : Plane -> Mesh Vertex
+planeMesh plane =
+    let
+        line =
+            aLine
+
+        intersect =
+            Plane.intersectLine plane line
+
+        vertices =
+            Plane.toMesh plane
+                |> map Vertex
+
+        -- vertices =
+        --     [ vec3 0.1 0.1 0.0
+        --     , vec3 0.1 -0.1 0.0
+        --     , vec3 -0.1 -0.1 0.0
+        --     , vec3 -0.1 0.1 0.0
+        --     ]
+        --         |> map Vertex
+        indices =
+            [ ( 0, 1, 2 )
+            , ( 0, 3, 2 )
+            ]
+    in
+        WebGL.indexedTriangles vertices indices
+
+
+normalMesh : Plane -> Mesh Vertex
+normalMesh plane =
+    let
+        transform =
+            Plane.makeTransform plane
+    in
+        [ ( vec3 0.0 0.0 0.0 |> transform |> Vertex
+          , vec3 0.0 1.0 0.0 |> transform |> Vertex
+          )
+        ]
             |> WebGL.lines
 
 
+coordinateMesh : Mesh Vertex
+coordinateMesh =
+    WebGL.lines
+        [ ( Vertex (vec3 -10 0 0), Vertex (vec3 10 0 0) )
+        , ( Vertex (vec3 0 -10 0), Vertex (vec3 0 10 0) )
+        , ( Vertex (vec3 0 0 -10), Vertex (vec3 0 0 10) )
+        ]
 
--- WebGL.lines
---     [ ( Vertex (vec3 0 0 0)
---       , Vertex (vec3 1 1 0)
---       )
---     , ( Vertex (vec3 1 1 0)
---       , Vertex (vec3 1 -1 0)
---       )
---     , ( Vertex (vec3 1 -1 0)
---       , Vertex (vec3 0 0 0)
---       )
---     , ( Vertex (vec3 1 -1 0)
---       , Vertex (vec3 0 0 2)
---       )
---     ]
+
+coneMesh : Cone -> Mesh Vertex
+coneMesh cone =
+    let
+        ellipse =
+            Cone.intersectPlane cone aPlane
+                |> Debug.log "ellipse"
+    in
+        Cone.toMesh cone
+            |> map (\( fst, snd ) -> ( Vertex fst, Vertex snd ))
+            |> WebGL.lines
 
 
 cylinder =
@@ -203,15 +262,50 @@ view model =
         [ WebGL.entity
             vertexShader
             fragmentShader
-            mesh
+            (lineMesh aLine)
             (Uniforms
                 (camera 1)
+                (vec3 0.8 0.0 0.0)
+            )
+        , WebGL.entity
+            vertexShader
+            fragmentShader
+            coordinateMesh
+            (Uniforms
+                (camera 1)
+                (vec3 0.7 0.7 0.7)
+            )
+        , WebGL.entity
+            vertexShader
+            fragmentShader
+            (planeMesh aPlane)
+            (Uniforms
+                (camera 1)
+                (vec3 0.9 0.9 0.0)
+            )
+        , WebGL.entity
+            vertexShader
+            fragmentShader
+            (normalMesh aPlane)
+            (Uniforms
+                (camera 1)
+                (vec3 0.9 0.0 0.0)
+            )
+        , WebGL.entity
+            vertexShader
+            fragmentShader
+            model.cone
+            (Uniforms
+                (camera 1)
+                (vec3 0.6 0.6 0.6)
             )
         ]
 
 
 type alias Uniforms =
-    { perspective : Mat4 }
+    { perspective : Mat4
+    , color : Vec3
+    }
 
 
 vertexShader : Shader Vertex Uniforms {}
@@ -233,9 +327,10 @@ fragmentShader =
     [glsl|
 
         precision mediump float;
+        uniform vec3 color;
 
         void main () {
-            gl_FragColor = vec4(vec3(0.3, 0.3, 0.3), 1.0);
+            gl_FragColor = vec4(color, 1.0);
         }
 
     |]
