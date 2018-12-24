@@ -13,6 +13,7 @@ import List.Extra exposing (zip, last)
 import Maybe
 import Plane exposing (Plane)
 import Cone exposing (Cone)
+import Ellipse exposing (Ellipse)
 
 
 type Msg
@@ -91,18 +92,20 @@ light =
 
 aPlane : Plane
 aPlane =
-    Plane (vec3 -1.0 2.5 1.0) (vec3 0.0 0.0 0.0)
+    Plane (Vec3.normalize (vec3 -1.0 2.5 1.0)) (vec3 0.0 0.0 0.0)
 
 
 aLine : Plane.Line
 aLine =
-    Plane.Line (vec3 0.0 5.0 0.0) (vec3 1.0 1.0 1.0)
+    Plane.Line
+        (Vec3.add (vec3 -0.37 -0.29 0.37) (Vec3.scale 1.85 (vec3 -0.61 -0.49 0.61)))
+        (vec3 0.0 1.0 0.0)
 
 
 aCone : Cone
 aCone =
     { vertex = vec3 0.0 2.5 0.0
-    , axis = vec3 0.0 -1.0 0.0
+    , axis = vec3 0.0 -1.0 0.0 |> Vec3.normalize
     , height = 5.0
     , angle = pi / 6
     }
@@ -173,74 +176,21 @@ coordinateMesh =
 
 coneMesh : Cone -> Mesh Vertex
 coneMesh cone =
+    Cone.toMesh cone
+        |> map (\( fst, snd ) -> ( Vertex fst, Vertex snd ))
+        |> WebGL.lines
+
+
+ellipseMesh : Mesh Vertex
+ellipseMesh =
     let
         ellipse =
-            Cone.intersectPlane cone aPlane
-                |> Debug.log "ellipse"
+            Cone.intersectPlane aCone aPlane
     in
-        Cone.toMesh cone
-            |> map (\( fst, snd ) -> ( Vertex fst, Vertex snd ))
+        Ellipse.toMesh ellipse
+            |> map Vertex
+            |> makeTuples (\x y -> ( x, y ))
             |> WebGL.lines
-
-
-cylinder =
-    let
-        heightSegments =
-            1
-
-        radialSegments =
-            15
-
-        height =
-            3
-
-        halfHeight =
-            height / 2
-
-        radiusBottom =
-            1.5
-
-        radiusTop =
-            0
-
-        slope =
-            (radiusBottom - radiusTop) / height
-
-        thetaLength =
-            2 * pi
-    in
-        range 0 heightSegments
-            |> map
-                (\y ->
-                    let
-                        v =
-                            toFloat y / heightSegments
-
-                        radius =
-                            v * (radiusBottom - radiusTop) + radiusTop
-                    in
-                        range 0 radialSegments
-                            |> map
-                                (\x ->
-                                    let
-                                        u =
-                                            (toFloat x / radialSegments)
-
-                                        theta =
-                                            (u * thetaLength - 0.00001)
-
-                                        sinTheta =
-                                            sin theta
-
-                                        cosTheta =
-                                            cos theta
-
-                                        p0 =
-                                            vec3 (radius * sinTheta) (-v * height + halfHeight) (radius * cosTheta)
-                                    in
-                                        Vertex p0
-                                )
-                )
 
 
 makeTuples fn list =
@@ -298,6 +248,14 @@ view model =
             (Uniforms
                 (camera 1)
                 (vec3 0.6 0.6 0.6)
+            )
+        , WebGL.entity
+            vertexShader
+            fragmentShader
+            (ellipseMesh)
+            (Uniforms
+                (camera 1)
+                (vec3 0.1 0.1 0.6)
             )
         ]
 

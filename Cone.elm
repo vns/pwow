@@ -5,6 +5,7 @@ import Math.Matrix4 as Mat4
 import List exposing (..)
 import List.Extra exposing (zip, last)
 import Plane exposing (Plane)
+import Ellipse exposing (Ellipse)
 
 
 type alias Cone =
@@ -12,15 +13,6 @@ type alias Cone =
     , axis : Vec3
     , angle : Float
     , height : Float
-    }
-
-
-type alias Ellipse =
-    { center : Vec3
-    , majorAxis : Vec3
-    , minorAxis : Vec3
-    , majorRadius : Float
-    , minorRadius : Float
     }
 
 
@@ -138,7 +130,7 @@ intersectPlane cone plane =
             Vec3.dot (Vec3.sub plane.point cone.vertex) plane.normal
 
         b =
-            cosTheta * cosTheta - sinAlpha * sinAlpha
+            (cosTheta * cosTheta - sinAlpha * sinAlpha)
 
         h =
             t / b
@@ -160,7 +152,7 @@ intersectPlane cone plane =
             abs h * sinAlpha * cosAlpha
 
         minorRadius =
-            (abs t) * sinAlpha / (sqrt (abs b))
+            t * sinAlpha / (sqrt (abs b))
     in
         { center = center
         , majorAxis = majorAxis
