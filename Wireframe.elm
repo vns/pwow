@@ -19,6 +19,7 @@ import Plane exposing (Plane)
 import Cone exposing (Cone)
 import Ellipse exposing (Ellipse)
 import Sphere exposing (Sphere)
+import Geometry
 
 
 type Msg
@@ -201,17 +202,8 @@ ellipseMesh =
     in
         Ellipse.toMesh ellipse
             |> map Vertex
-            |> makeTuples (\x y -> ( x, y ))
+            |> Geometry.eachTuple (\x y -> ( x, y ))
             |> WebGL.lines
-
-
-makeTuples fn list =
-    case list of
-        a :: b :: rest ->
-            fn a b :: (makeTuples fn <| b :: rest)
-
-        _ ->
-            []
 
 
 view : Model -> Html msg

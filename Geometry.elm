@@ -3,6 +3,10 @@ module Geometry exposing (..)
 import List exposing (..)
 
 
+epsilon =
+    0.00001
+
+
 indexes slices stacks i j =
     let
         sliceCount =

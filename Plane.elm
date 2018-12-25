@@ -2,6 +2,7 @@ module Plane exposing (..)
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Matrix4 as Mat4
+import Geometry exposing (epsilon)
 import List exposing (..)
 
 
@@ -42,7 +43,7 @@ intersectLine plane line =
             (Vec3.dot (Vec3.normalize plane.normal) plane.point)
                 / Vec3.length plane.normal
     in
-        if (abs dotDir < 0.00001) then
+        if (abs dotDir < epsilon) then
             Nothing
         else
             Just
@@ -62,13 +63,13 @@ makeTransform plane =
             acos (Vec3.dot (Vec3.normalize plane.normal) Vec3.j)
 
         axis =
-            if abs (angle - pi) <= 0.00001 then
+            if abs (angle - pi) <= epsilon then
                 Vec3.i
             else
                 Vec3.normalize (Vec3.cross Vec3.j plane.normal)
 
         rot =
-            if abs angle <= 0.00001 then
+            if abs angle <= epsilon then
                 Mat4.identity
             else
                 Mat4.makeRotate angle axis

@@ -6,7 +6,7 @@ import List exposing (..)
 import List.Extra exposing (zip, last)
 import Plane exposing (Plane)
 import Ellipse exposing (Ellipse)
-import Geometry
+import Geometry exposing (epsilon)
 
 
 type alias Cone =
@@ -15,30 +15,6 @@ type alias Cone =
     , angle : Float
     , height : Float
     }
-
-
-
--- toMesh : Cone -> List ( Vec3, Vec3 )
--- toMesh cone =
--- let
---     vertices =
---         toVertices cone
---     sideLines =
---         vertices
---             |> Geometry.eachTuple zip
---             |> concatMap identity
---     bottomLines =
---         case last vertices of
---             Just bottom ->
---                 Geometry.eachTuple (\x y -> ( x, y )) bottom
---             Nothing ->
---                 []
--- in
---     append sideLines bottomLines
-
-
-getRadius cone =
-    cone.height * (tan cone.angle)
 
 
 toMesh : Cone -> ( List Vec3, List ( Int, Int, Int ) )
@@ -66,13 +42,13 @@ toMesh cone =
             acos (Vec3.dot (Vec3.normalize cone.axis) (Vec3.normalize Vec3.j))
 
         axis =
-            if abs (angle - pi) <= 0.00001 then
+            if abs (angle - pi) <= epsilon then
                 Vec3.i
             else
                 Vec3.normalize (Vec3.cross Vec3.j cone.axis)
 
         rotate =
-            if abs angle <= 0.00001 then
+            if abs angle <= epsilon then
                 identity
             else
                 Mat4.transform (Mat4.makeRotate angle axis)
@@ -95,7 +71,7 @@ toMesh cone =
                                             (toFloat x / radialSegments)
 
                                         theta =
-                                            (u * thetaLength - 0.00001)
+                                            (u * thetaLength - epsilon)
 
                                         sinTheta =
                                             sin theta
