@@ -20,6 +20,7 @@ import Cone exposing (Cone)
 import Ellipse exposing (Ellipse)
 import Sphere exposing (Sphere)
 import Geometry
+import Dandelin.Mesh
 
 
 type Msg
@@ -53,7 +54,7 @@ init _ =
     ( { time = 0
       , angle = 0
       , cone =
-            (coneMesh aCone)
+            Dandelin.Mesh.cone aCone
       }
     , Cmd.none
     )
@@ -117,93 +118,9 @@ aCone =
     }
 
 
-lineMesh : Plane.Line -> Mesh Vertex
-lineMesh line =
-    let
-        offset =
-            Vec3.scale 3.0 line.direction
-    in
-        WebGL.lines
-            [ ( Vertex (Vec3.add line.origin offset)
-              , Vertex (Vec3.sub line.origin offset)
-              )
-            ]
-
-
-planeMesh : Plane -> Mesh Vertex
-planeMesh plane =
-    let
-        line =
-            aLine
-
-        intersect =
-            Plane.intersectLine plane line
-
-        vertices =
-            Plane.toMesh plane
-                |> map Vertex
-
-        -- indices =
-        --     [ ( 0, 1, 2 )
-        --     , ( 0, 3, 2 )
-        --     ]
-        indices =
-            [ ( 1, 2, 3 )
-            , ( 0, 1, 3 )
-            ]
-    in
-        WebGL.indexedTriangles vertices indices
-
-
-normalMesh : Plane -> Mesh Vertex
-normalMesh plane =
-    let
-        transform =
-            Plane.makeTransform plane
-    in
-        [ ( vec3 0.0 0.0 0.0 |> transform |> Vertex
-          , vec3 0.0 1.0 0.0 |> transform |> Vertex
-          )
-        ]
-            |> WebGL.lines
-
-
-coordinateMesh : Mesh Vertex
-coordinateMesh =
-    WebGL.lines
-        [ ( Vertex (vec3 -10 0 0), Vertex (vec3 10 0 0) )
-        , ( Vertex (vec3 0 -10 0), Vertex (vec3 0 10 0) )
-        , ( Vertex (vec3 0 0 -10), Vertex (vec3 0 0 10) )
-        ]
-
-
-coneMesh : Cone -> Mesh Vertex
-coneMesh cone =
-    let
-        ( vertices, indexes ) =
-            Cone.toMesh cone
-    in
-        WebGL.indexedTriangles (vertices |> map Vertex) indexes
-
-
-sphereMesh =
-    let
-        ( vertices, indexes ) =
-            Sphere.toMesh (Sphere 0.77 (vec3 0.0 0.9 0.0))
-    in
-        WebGL.indexedTriangles (vertices |> map Vertex) indexes
-
-
-ellipseMesh : Mesh Vertex
-ellipseMesh =
-    let
-        ellipse =
-            Cone.intersectPlane aCone aPlane
-    in
-        Ellipse.toMesh ellipse
-            |> map Vertex
-            |> Geometry.eachTuple (\x y -> ( x, y ))
-            |> WebGL.lines
+aSphere : Sphere
+aSphere =
+    (Sphere 0.77 (vec3 0.0 0.9 0.0))
 
 
 view : Model -> Html msg
@@ -220,34 +137,34 @@ view model =
         [ -- [ WebGL.entity
           --     vertexShader
           --     fragmentShader
-          --     (lineMesh aLine)
+          --     (Dandelin.Mesh.line aLine)
           --     (Uniforms
           --         (camera 1)
           --         (vec4 0.8 0.0 0.0 1.0)
           --     )
-          -- , WebGL.entity
-          --     vertexShader
-          --     fragmentShader
-          --     coordinateMesh
-          --     (Uniforms
-          --         (camera 1)
-          --         (vec4 0.7 0.7 0.7 1.0)
-          --     )
-          -- WebGL.entityWith
-          --   [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-          --   , DepthTest.less { write = True, near = 0.0, far = 1.0 }
-          --   ]
+          -- WebGL.entity
           --   vertexShader
           --   fragmentShader
-          --   (planeMesh aPlane)
+          --   (Dandelin.Mesh.coordinateAxes)
           --   (Uniforms
           --       (camera 1)
-          --       (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 1)
+          --       (vec4 0.7 0.7 0.7 1.0)
           --   )
-          WebGL.entity
+          WebGL.entityWith
+            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+            , DepthTest.less { write = True, near = 0.0, far = 1.0 }
+            ]
             vertexShader
             fragmentShader
-            (sphereMesh)
+            (Dandelin.Mesh.plane aPlane)
+            (Uniforms
+                (camera 1)
+                (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 1)
+            )
+        , WebGL.entity
+            vertexShader
+            fragmentShader
+            (Dandelin.Mesh.sphere aSphere)
             (Uniforms
                 (camera 1)
                 (vec4 0.6 0.6 0.6 1.0)
@@ -277,7 +194,7 @@ view model =
         , WebGL.entity
             vertexShader
             fragmentShader
-            (ellipseMesh)
+            (Dandelin.Mesh.ellipse aCone aPlane)
             (Uniforms
                 (camera 1)
                 (vec4 0.6 0.6 0.6 1.0)
