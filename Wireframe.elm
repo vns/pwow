@@ -15,11 +15,11 @@ import WebGL.Settings.DepthTest as DepthTest
 import List exposing (..)
 import List.Extra exposing (zip, last)
 import Maybe
-import Plane exposing (Plane)
-import Cone exposing (Cone)
-import Ellipse exposing (Ellipse)
-import Sphere exposing (Sphere)
-import Geometry
+import Geometry.Line as Line exposing (Line)
+import Geometry.Plane as Plane exposing (Plane)
+import Geometry.Cone as Cone exposing (Cone)
+import Geometry.Ellipse as Ellipse exposing (Ellipse)
+import Geometry.Sphere as Sphere exposing (Sphere)
 import Dandelin.Mesh
 
 
@@ -102,9 +102,9 @@ aPlane =
     Plane (Vec3.normalize (vec3 -1.0 2.5 1.0)) (vec3 0.0 0.0 0.0)
 
 
-aLine : Plane.Line
+aLine : Line
 aLine =
-    Plane.Line
+    Line
         (Vec3.add (vec3 -0.37 -0.29 0.37) (Vec3.scale 1.85 (vec3 -0.61 -0.49 0.61)))
         (vec3 0.0 1.0 0.0)
 

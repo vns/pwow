@@ -1,11 +1,11 @@
-module Cone exposing (..)
+module Geometry.Cone exposing (..)
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Matrix4 as Mat4
 import List exposing (..)
 import List.Extra exposing (zip, last)
-import Plane exposing (Plane)
-import Ellipse exposing (Ellipse)
+import Geometry.Plane as Plane exposing (Plane)
+import Geometry.Ellipse as Ellipse exposing (Ellipse)
 import Geometry exposing (epsilon)
 
 

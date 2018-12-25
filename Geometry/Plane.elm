@@ -1,20 +1,15 @@
-module Plane exposing (..)
+module Geometry.Plane exposing (..)
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Matrix4 as Mat4
 import Geometry exposing (epsilon)
+import Geometry.Line exposing (Line)
 import List exposing (..)
 
 
 type alias Plane =
     { normal : Vec3
     , point : Vec3
-    }
-
-
-type alias Line =
-    { origin : Vec3
-    , direction : Vec3
     }
 
 
