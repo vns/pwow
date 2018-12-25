@@ -12,6 +12,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Time
 import WebGL exposing (Mesh, Shader)
 import WebGL.Settings
+import Geometry
 
 
 type Msg
@@ -105,7 +106,9 @@ light =
 
 view : Model -> Html msg
 view model =
-    WebGL.toHtml
+    WebGL.toHtmlWith
+        [ WebGL.alpha True
+        ]
         [ width 700
         , height 700
         , style "display" "block"
@@ -455,15 +458,6 @@ indexes slices stacks i j =
             ]
 
 
-makeTuples fn list =
-    case list of
-        a :: b :: rest ->
-            fn a b :: (makeTuples fn <| b :: rest)
-
-        _ ->
-            []
-
-
 wireframeCone : Mesh Attributes
 wireframeCone =
     let
@@ -472,13 +466,13 @@ wireframeCone =
 
         sideLines =
             vertices
-                |> makeTuples zip
+                |> Geometry.eachTuple zip
                 |> concatMap identity
 
         bottomLines =
             case last vertices of
                 Just bottom ->
-                    makeTuples (\x y -> ( x, y )) bottom
+                    Geometry.eachTuple (\x y -> ( x, y )) bottom
 
                 Nothing ->
                     []
@@ -490,7 +484,7 @@ wireframeCone =
 wireframeEllipse : Mesh Attributes
 wireframeEllipse =
     ellipse
-        |> makeTuples (\x y -> ( x, y ))
+        |> Geometry.eachTuple (\x y -> ( x, y ))
         |> WebGL.lines
 
 
@@ -525,6 +519,6 @@ fragmentShader =
         uniform vec3 color;
 
         void main () {
-            gl_FragColor = vec4(color * vlighting, 1.0);
+            gl_FragColor = vec4(color * vlighting, 0.5);
         }
     |]

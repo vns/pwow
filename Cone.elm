@@ -6,6 +6,7 @@ import List exposing (..)
 import List.Extra exposing (zip, last)
 import Plane exposing (Plane)
 import Ellipse exposing (Ellipse)
+import Geometry
 
 
 type alias Cone =
@@ -16,51 +17,47 @@ type alias Cone =
     }
 
 
-makeTuples fn list =
-    case list of
-        a :: b :: rest ->
-            fn a b :: (makeTuples fn <| b :: rest)
 
-        _ ->
-            []
+-- toMesh : Cone -> List ( Vec3, Vec3 )
+-- toMesh cone =
+-- let
+--     vertices =
+--         toVertices cone
+--     sideLines =
+--         vertices
+--             |> Geometry.eachTuple zip
+--             |> concatMap identity
+--     bottomLines =
+--         case last vertices of
+--             Just bottom ->
+--                 Geometry.eachTuple (\x y -> ( x, y )) bottom
+--             Nothing ->
+--                 []
+-- in
+--     append sideLines bottomLines
 
 
-toMesh : Cone -> List ( Vec3, Vec3 )
+getRadius cone =
+    cone.height * (tan cone.angle)
+
+
+toMesh : Cone -> ( List Vec3, List ( Int, Int, Int ) )
 toMesh cone =
-    let
-        vertices =
-            toVertices cone
-
-        sideLines =
-            vertices
-                |> makeTuples zip
-                |> concatMap identity
-
-        bottomLines =
-            case last vertices of
-                Just bottom ->
-                    makeTuples (\x y -> ( x, y )) bottom
-
-                Nothing ->
-                    []
-    in
-        append sideLines bottomLines
-
-
-toVertices : Cone -> List (List Vec3)
-toVertices cone =
     let
         heightSegments =
             1
 
         radialSegments =
-            25
+            35
 
         halfHeight =
             cone.height / 2
 
+        slope =
+            tan cone.angle
+
         radiusBottom =
-            cone.height * (tan cone.angle)
+            cone.height * slope
 
         thetaLength =
             2 * pi
@@ -109,9 +106,13 @@ toVertices cone =
                                         p0 =
                                             vec3 (radius * sinTheta) (v * cone.height) (radius * cosTheta)
                                     in
-                                        Vec3.add (rotate p0) cone.vertex
+                                        ( Vec3.add (rotate p0) cone.vertex
+                                        , Geometry.indexes radialSegments heightSegments y x
+                                        )
                                 )
                 )
+            |> concatMap identity
+            |> foldl (\( v, i ) ( av, ai ) -> ( v :: av, i ++ ai )) ( [], [] )
 
 
 intersectPlane : Cone -> Plane -> Ellipse

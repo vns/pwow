@@ -5,15 +5,20 @@ import Browser.Events exposing (onAnimationFrameDelta)
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector4 as Vec4 exposing (Vec4, vec4)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Time
 import WebGL exposing (Mesh, Shader)
+import WebGL.Settings exposing (back, front)
+import WebGL.Settings.Blend as Blend
+import WebGL.Settings.DepthTest as DepthTest
 import List exposing (..)
 import List.Extra exposing (zip, last)
 import Maybe
 import Plane exposing (Plane)
 import Cone exposing (Cone)
 import Ellipse exposing (Ellipse)
+import Sphere exposing (Sphere)
 
 
 type Msg
@@ -137,16 +142,13 @@ planeMesh plane =
             Plane.toMesh plane
                 |> map Vertex
 
-        -- vertices =
-        --     [ vec3 0.1 0.1 0.0
-        --     , vec3 0.1 -0.1 0.0
-        --     , vec3 -0.1 -0.1 0.0
-        --     , vec3 -0.1 0.1 0.0
+        -- indices =
+        --     [ ( 0, 1, 2 )
+        --     , ( 0, 3, 2 )
         --     ]
-        --         |> map Vertex
         indices =
-            [ ( 0, 1, 2 )
-            , ( 0, 3, 2 )
+            [ ( 1, 2, 3 )
+            , ( 0, 1, 3 )
             ]
     in
         WebGL.indexedTriangles vertices indices
@@ -176,9 +178,19 @@ coordinateMesh =
 
 coneMesh : Cone -> Mesh Vertex
 coneMesh cone =
-    Cone.toMesh cone
-        |> map (\( fst, snd ) -> ( Vertex fst, Vertex snd ))
-        |> WebGL.lines
+    let
+        ( vertices, indexes ) =
+            Cone.toMesh cone
+    in
+        WebGL.indexedTriangles (vertices |> map Vertex) indexes
+
+
+sphereMesh =
+    let
+        ( vertices, indexes ) =
+            Sphere.toMesh (Sphere 0.77 (vec3 0.0 0.9 0.0))
+    in
+        WebGL.indexedTriangles (vertices |> map Vertex) indexes
 
 
 ellipseMesh : Mesh Vertex
@@ -204,65 +216,86 @@ makeTuples fn list =
 
 view : Model -> Html msg
 view model =
-    WebGL.toHtml
+    WebGL.toHtmlWith
+        [ WebGL.alpha True
+        , WebGL.antialias
+        , WebGL.depth 1
+        ]
         [ width 700
         , height 700
         , style "display" "block"
         ]
-        [ WebGL.entity
+        [ -- [ WebGL.entity
+          --     vertexShader
+          --     fragmentShader
+          --     (lineMesh aLine)
+          --     (Uniforms
+          --         (camera 1)
+          --         (vec4 0.8 0.0 0.0 1.0)
+          --     )
+          -- , WebGL.entity
+          --     vertexShader
+          --     fragmentShader
+          --     coordinateMesh
+          --     (Uniforms
+          --         (camera 1)
+          --         (vec4 0.7 0.7 0.7 1.0)
+          --     )
+          -- WebGL.entityWith
+          --   [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+          --   , DepthTest.less { write = True, near = 0.0, far = 1.0 }
+          --   ]
+          --   vertexShader
+          --   fragmentShader
+          --   (planeMesh aPlane)
+          --   (Uniforms
+          --       (camera 1)
+          --       (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 1)
+          --   )
+          WebGL.entity
             vertexShader
             fragmentShader
-            (lineMesh aLine)
+            (sphereMesh)
             (Uniforms
                 (camera 1)
-                (vec3 0.8 0.0 0.0)
+                (vec4 0.6 0.6 0.6 1.0)
             )
-        , WebGL.entity
-            vertexShader
-            fragmentShader
-            coordinateMesh
-            (Uniforms
-                (camera 1)
-                (vec3 0.7 0.7 0.7)
-            )
-        , WebGL.entity
-            vertexShader
-            fragmentShader
-            (planeMesh aPlane)
-            (Uniforms
-                (camera 1)
-                (vec3 0.9 0.9 0.0)
-            )
-        , WebGL.entity
-            vertexShader
-            fragmentShader
-            (normalMesh aPlane)
-            (Uniforms
-                (camera 1)
-                (vec3 0.9 0.0 0.0)
-            )
-        , WebGL.entity
+        , WebGL.entityWith
+            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+            , DepthTest.less { write = False, near = 0.0, far = 1.0 }
+
+            -- , WebGL.Settings.cullFace back
+            ]
             vertexShader
             fragmentShader
             model.cone
             (Uniforms
                 (camera 1)
-                (vec3 0.6 0.6 0.6)
+                (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 0.6)
             )
+
+        -- , WebGL.entity
+        --     vertexShader
+        --     fragmentShader
+        --     (normalMesh aPlane)
+        --     (Uniforms
+        --         (camera 1)
+        --         (vec4 0.9 0.0 0.0 1.0)
+        --     )
         , WebGL.entity
             vertexShader
             fragmentShader
             (ellipseMesh)
             (Uniforms
                 (camera 1)
-                (vec3 0.1 0.1 0.6)
+                (vec4 0.6 0.6 0.6 1.0)
             )
         ]
 
 
 type alias Uniforms =
     { perspective : Mat4
-    , color : Vec3
+    , color : Vec4
     }
 
 
@@ -285,10 +318,10 @@ fragmentShader =
     [glsl|
 
         precision mediump float;
-        uniform vec3 color;
+        uniform vec4 color;
 
         void main () {
-            gl_FragColor = vec4(color, 1.0);
+            gl_FragColor = vec4(color);
         }
 
     |]

@@ -29,18 +29,6 @@ withPoints p q r =
         Plane normal p
 
 
-
--- withParams : Float -> Float -> Float -> Float -> Plane
--- withParams a b c d =
---     let
---         norm =
---             sqrt (a * a + b * b + c * c)
---     in
---         Plane
---             (vec3 (a / norm) (b / norm) (c / norm))
---             (-d / norm)
-
-
 intersectLine : Plane -> Line -> Maybe Vec3
 intersectLine plane line =
     let
