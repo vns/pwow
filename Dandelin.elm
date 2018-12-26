@@ -31,7 +31,6 @@ type Msg
 type alias Model =
     { time : Float
     , angle : Float
-    , cone : WebGL.Mesh Attributes
     }
 
 
@@ -54,8 +53,6 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     ( { time = 0
       , angle = 0
-      , cone =
-            Mesh.cone aCone
       }
     , Cmd.none
     )
@@ -108,46 +105,35 @@ anotherPlane =
     Plane (Vec3.normalize (vec3 -2.0 0.0 1.0)) (vec3 0.0 0.0 0.0)
 
 
+aCone : Cone
+aCone =
+    { vertex = vec3 0.0 2.5 0.0
+    , axis = vec3 0.0 -1.0 0.0 |> Vec3.normalize
+    , height = 5.0
+    , angle = pi / 6
+    }
+
+
+anEllipse : Ellipse
+anEllipse =
+    Cone.intersectPlane aCone aPlane
+
+
 aTangentPoint0 =
-    let
-        plane =
-            anotherPlane
-
-        cone =
-            aCone
-
-        sphere0 =
-            Cone.sphere0 aCone aPlane
-
-        direction =
-            Mat4.transform (Mat4.makeRotate cone.angle plane.normal) <|
-                Vec3.normalize (Vec3.cross plane.normal cone.axis)
-
-        -- coord =
-        --     Vec3.sub sphere0.center (Vec3.scale sphere0.radius direction)
-    in
-        Vec3.sub sphere0.center (Vec3.scale sphere0.radius direction)
+    aTangentPoint (Cone.sphere0 aCone aPlane)
 
 
 aTangentPoint1 =
+    aTangentPoint (Cone.sphere1 aCone aPlane)
+
+
+aTangentPoint sphere =
     let
-        plane =
-            anotherPlane
-
-        cone =
-            aCone
-
-        sphere1 =
-            Cone.sphere1 aCone aPlane
-
         direction =
-            Mat4.transform (Mat4.makeRotate cone.angle plane.normal) <|
-                Vec3.normalize (Vec3.cross plane.normal cone.axis)
-
-        -- coord =
-        --     Vec3.sub sphere0.center (Vec3.scale sphere0.radius direction)
+            Mat4.transform (Mat4.makeRotate aCone.angle anotherPlane.normal) <|
+                Vec3.normalize (Vec3.cross anotherPlane.normal aCone.axis)
     in
-        Vec3.add sphere1.center (Vec3.scale sphere1.radius direction)
+        Vec3.add sphere.center (Vec3.scale (abs sphere.radius) direction)
 
 
 aPointOnTheEllipse =
@@ -159,37 +145,6 @@ aPointOnTheEllipse =
             Maybe.withDefault (vec3 0 0 0) (Plane.intersectLine aPlane line)
     in
         point
-
-
-aLine : Line
-aLine =
-    Line
-        (Vec3.add (vec3 -0.37 -0.29 0.37) (Vec3.scale 1.85 (vec3 -0.61 -0.49 0.61)))
-        (vec3 0.0 1.0 0.0)
-
-
-aCone : Cone
-aCone =
-    { vertex = vec3 0.0 2.5 0.0
-    , axis = vec3 0.0 -1.0 0.0 |> Vec3.normalize
-    , height = 5.0
-    , angle = pi / 6
-    }
-
-
-aSphere : Sphere
-aSphere =
-    (Sphere 0.75 (vec3 0.0 0.9 0.0))
-
-
-anEllipse : Ellipse
-anEllipse =
-    Cone.intersectPlane aCone aPlane
-
-
-aPoint : Vec3 -> Sphere
-aPoint center =
-    (Sphere 0.025 center)
 
 
 objectWith : List Setting -> WebGL.Mesh Attributes -> Vec4 -> WebGL.Entity
