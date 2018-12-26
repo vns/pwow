@@ -39,6 +39,19 @@ line aLine =
             ]
 
 
+lineSegment : Vec3 -> Vec3 -> Mesh Attributes
+lineSegment p1 p2 =
+    let
+        normal =
+            vec3 0 0 0
+    in
+        WebGL.lines
+            [ ( Attributes p1 normal
+              , Attributes p2 normal
+              )
+            ]
+
+
 {-| Create a mesh for a given plane
 -}
 plane : Plane -> Mesh Attributes

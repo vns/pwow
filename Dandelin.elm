@@ -87,7 +87,7 @@ camera ratio =
             vec3 4 1 10
 
         center =
-            vec3 0 0 0
+            vec3 0 -1 0
     in
         (Mat4.makeLookAt eye center Vec3.j)
             |> Mat4.mul (Mat4.makePerspective 45 ratio 0.01 100)
@@ -105,7 +105,7 @@ aPlane =
 
 anotherPlane : Plane
 anotherPlane =
-    Plane (Vec3.normalize (vec3 -1.0 0.0 1.0)) (vec3 0.0 0.0 0.0)
+    Plane (Vec3.normalize (vec3 -2.0 0.0 1.0)) (vec3 0.0 0.0 0.0)
 
 
 aTangentPoint0 =
@@ -318,10 +318,30 @@ view model =
             ]
             Dandelin.Shader.vertex
             Dandelin.Shader.fragment
+            (Dandelin.Mesh.lineSegment aPointOnTheEllipse (.focus0 anEllipse))
+            (Dandelin.Shader.Uniforms
+                (camera 1)
+                (vec4 0.0 0.0 1.0 1)
+            )
+        , WebGL.entityWith
+            [-- Blend.add Blend.srcAlpha Blend.one
+            ]
+            Dandelin.Shader.vertex
+            Dandelin.Shader.fragment
             (Dandelin.Mesh.sphere (aPoint (.focus1 anEllipse)))
             (Dandelin.Shader.Uniforms
                 (camera 1)
                 (vec4 0.0 0.0 0.0 1)
+            )
+        , WebGL.entityWith
+            [-- Blend.add Blend.srcAlpha Blend.one
+            ]
+            Dandelin.Shader.vertex
+            Dandelin.Shader.fragment
+            (Dandelin.Mesh.lineSegment aPointOnTheEllipse (.focus1 anEllipse))
+            (Dandelin.Shader.Uniforms
+                (camera 1)
+                (vec4 0.0 1.0 1.0 1)
             )
         , WebGL.entityWith
             [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
@@ -364,6 +384,26 @@ view model =
             (Dandelin.Shader.Uniforms
                 (camera 1)
                 (vec4 0.0 0.0 0.0 1)
+            )
+        , WebGL.entityWith
+            [-- Blend.add Blend.srcAlpha Blend.one
+            ]
+            Dandelin.Shader.vertex
+            Dandelin.Shader.fragment
+            (Dandelin.Mesh.lineSegment aPointOnTheEllipse aTangentPoint0)
+            (Dandelin.Shader.Uniforms
+                (camera 1)
+                (vec4 0.0 0.0 1.0 1)
+            )
+        , WebGL.entityWith
+            [-- Blend.add Blend.srcAlpha Blend.one
+            ]
+            Dandelin.Shader.vertex
+            Dandelin.Shader.fragment
+            (Dandelin.Mesh.lineSegment aPointOnTheEllipse aTangentPoint1)
+            (Dandelin.Shader.Uniforms
+                (camera 1)
+                (vec4 0.0 1.0 1.0 1)
             )
 
         -- , WebGL.entity
