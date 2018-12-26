@@ -10,7 +10,7 @@ type alias Sphere =
     }
 
 
-sphereFn sphere u v =
+parametrize sphere u v =
     let
         maxTheta =
             pi
@@ -28,5 +28,9 @@ sphereFn sphere u v =
             vec3 (sphere.radius * sin theta * cos phi) (sphere.radius * sin theta * sin phi) (sphere.radius * cos theta)
 
 
+normalize sphere u v =
+    parametrize sphere u v |> Vec3.normalize
+
+
 toMesh sphere =
-    Geometry.triangles (sphereFn sphere)
+    Geometry.triangles (parametrize sphere) (normalize sphere)

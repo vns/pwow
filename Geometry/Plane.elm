@@ -75,16 +75,22 @@ makeTransform plane =
         Mat4.transform (Mat4.mul trans rot)
 
 
-toMesh : Plane -> List Vec3
+toMesh : Plane -> ( List Vec3, List Vec3 )
 toMesh plane =
     let
         scaleFactor =
             3
+
+        vertices =
+            [ vec3 -1.0 0.0 -1.0
+            , vec3 -1.0 0.0 1.0
+            , vec3 1.0 0.0 1.0
+            , vec3 1.0 0.0 -1.0
+            ]
+                |> map (Vec3.scale scaleFactor)
+                |> map (makeTransform plane)
+
+        normals =
+            repeat 4 ((makeTransform plane) <| plane.normal)
     in
-        [ vec3 -1.0 0.0 -1.0
-        , vec3 -1.0 0.0 1.0
-        , vec3 1.0 0.0 1.0
-        , vec3 1.0 0.0 -1.0
-        ]
-            |> map (Vec3.scale scaleFactor)
-            |> map (makeTransform plane)
+        ( vertices, normals )

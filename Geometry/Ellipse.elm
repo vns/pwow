@@ -25,7 +25,7 @@ toMesh ellipse =
             ellipse.minorRadius
 
         segmentCount =
-            25
+            50
 
         thetaLength =
             2 * pi

@@ -21,6 +21,7 @@ import Geometry.Cone as Cone exposing (Cone)
 import Geometry.Ellipse as Ellipse exposing (Ellipse)
 import Geometry.Sphere as Sphere exposing (Sphere)
 import Dandelin.Mesh
+import Dandelin.Shader exposing (Attributes, Uniforms)
 
 
 type Msg
@@ -30,7 +31,7 @@ type Msg
 type alias Model =
     { time : Float
     , angle : Float
-    , cone : Mesh Vertex
+    , cone : Mesh Attributes
     }
 
 
@@ -150,35 +151,34 @@ view model =
           --       (camera 1)
           --       (vec4 0.7 0.7 0.7 1.0)
           --   )
-          WebGL.entityWith
-            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-            , DepthTest.less { write = True, near = 0.0, far = 1.0 }
-            ]
-            vertexShader
-            fragmentShader
-            (Dandelin.Mesh.plane aPlane)
-            (Uniforms
-                (camera 1)
-                (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 1)
-            )
-        , WebGL.entity
-            vertexShader
-            fragmentShader
+          -- WebGL.entityWith
+          --   [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+          --   , DepthTest.less { write = True, near = 0.0, far = 1.0 }
+          --   ]
+          --   Dandelin.Shader.vertex
+          --   Dandelin.Shader.fragment
+          --   (Dandelin.Mesh.plane aPlane)
+          --   (Uniforms
+          --       (camera 1)
+          --       (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 0.7)
+          --   )
+          WebGL.entity
+            Dandelin.Shader.vertex
+            Dandelin.Shader.fragment
             (Dandelin.Mesh.sphere aSphere)
-            (Uniforms
+            (Dandelin.Shader.Uniforms
                 (camera 1)
-                (vec4 0.6 0.6 0.6 1.0)
+                (vec4 0.4 0.4 0.4 0.6)
             )
         , WebGL.entityWith
             [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
             , DepthTest.less { write = False, near = 0.0, far = 1.0 }
-
-            -- , WebGL.Settings.cullFace back
+            , WebGL.Settings.cullFace back
             ]
-            vertexShader
-            fragmentShader
+            Dandelin.Shader.vertex
+            Dandelin.Shader.fragment
             model.cone
-            (Uniforms
+            (Dandelin.Shader.Uniforms
                 (camera 1)
                 (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 0.6)
             )
@@ -192,45 +192,11 @@ view model =
         --         (vec4 0.9 0.0 0.0 1.0)
         --     )
         , WebGL.entity
-            vertexShader
-            fragmentShader
+            Dandelin.Shader.simpleVertex
+            Dandelin.Shader.simpleFragment
             (Dandelin.Mesh.ellipse aCone aPlane)
-            (Uniforms
+            (Dandelin.Shader.Uniforms
                 (camera 1)
-                (vec4 0.6 0.6 0.6 1.0)
+                (vec4 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF) 1.0)
             )
         ]
-
-
-type alias Uniforms =
-    { perspective : Mat4
-    , color : Vec4
-    }
-
-
-vertexShader : Shader Vertex Uniforms {}
-vertexShader =
-    [glsl|
-
-        attribute vec3 position;
-        uniform mat4 perspective;
-
-        void main () {
-            gl_Position = perspective * vec4(position, 1.0);
-        }
-
-    |]
-
-
-fragmentShader : Shader {} Uniforms {}
-fragmentShader =
-    [glsl|
-
-        precision mediump float;
-        uniform vec4 color;
-
-        void main () {
-            gl_FragColor = vec4(color);
-        }
-
-    |]

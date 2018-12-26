@@ -4,6 +4,7 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Matrix4 as Mat4
 import List exposing (..)
 import List.Extra exposing (zip, last)
+import Tuple
 import Geometry.Plane as Plane exposing (Plane)
 import Geometry.Ellipse as Ellipse exposing (Ellipse)
 import Geometry exposing (epsilon)
@@ -17,14 +18,14 @@ type alias Cone =
     }
 
 
-toMesh : Cone -> ( List Vec3, List ( Int, Int, Int ) )
+toMesh : Cone -> ( List Vec3, List Vec3, List ( Int, Int, Int ) )
 toMesh cone =
     let
         heightSegments =
             1
 
         radialSegments =
-            35
+            50
 
         halfHeight =
             cone.height / 2
@@ -81,14 +82,18 @@ toMesh cone =
 
                                         p0 =
                                             vec3 (radius * sinTheta) (v * cone.height) (radius * cosTheta)
+
+                                        normal =
+                                            vec3 sinTheta slope cosTheta |> Vec3.normalize
                                     in
                                         ( Vec3.add (rotate p0) cone.vertex
+                                        , Vec3.add (rotate normal) cone.vertex
                                         , Geometry.indexes radialSegments heightSegments y x
                                         )
                                 )
                 )
             |> concatMap identity
-            |> foldl (\( v, i ) ( av, ai ) -> ( v :: av, i ++ ai )) ( [], [] )
+            |> foldl (\( v, n, i ) ( av, an, ai ) -> ( v :: av, n :: an, i ++ ai )) ( [], [], [] )
 
 
 intersectPlane : Cone -> Plane -> Ellipse

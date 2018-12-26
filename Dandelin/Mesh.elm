@@ -10,18 +10,18 @@ import Geometry.Cone as Cone exposing (Cone)
 import Geometry.Ellipse as Ellipse exposing (Ellipse)
 import Geometry.Sphere as Sphere exposing (Sphere)
 import WebGL exposing (Mesh)
-import Dandelin.Shader exposing (Vertex)
+import Dandelin.Shader exposing (Vertex, Attributes)
 
 
 {-| Create a mesh for a cone
 -}
-cone : Cone -> Mesh Vertex
+cone : Cone -> Mesh Attributes
 cone aCone =
     let
-        ( vertices, indices ) =
+        ( vertices, normals, indices ) =
             Cone.toMesh aCone
     in
-        WebGL.indexedTriangles (vertices |> map Vertex) indices
+        WebGL.indexedTriangles (map2 Attributes vertices normals) indices
 
 
 {-| Create a mesh for a given line
@@ -41,19 +41,18 @@ line aLine =
 
 {-| Create a mesh for a given plane
 -}
-plane : Plane -> Mesh Vertex
+plane : Plane -> Mesh Attributes
 plane aPlane =
     let
-        vertices =
+        ( vertices, normals ) =
             Plane.toMesh aPlane
-                |> map Vertex
 
         indices =
             [ ( 1, 2, 3 )
             , ( 0, 1, 3 )
             ]
     in
-        WebGL.indexedTriangles vertices indices
+        WebGL.indexedTriangles (map2 Attributes vertices normals) indices
 
 
 {-| Create a line mesh for the normal of a given plane
@@ -95,10 +94,10 @@ ellipse aCone aPlane =
             |> WebGL.lineLoop
 
 
-sphere : Sphere -> Mesh Vertex
+sphere : Sphere -> Mesh Attributes
 sphere aSphere =
     let
-        ( vertices, indices ) =
+        ( vertices, normals, indices ) =
             Sphere.toMesh aSphere
     in
-        WebGL.indexedTriangles (vertices |> map Vertex) indices
+        WebGL.indexedTriangles (map2 Attributes vertices normals) indices

@@ -1,5 +1,6 @@
 module Geometry exposing (..)
 
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import List exposing (..)
 
 
@@ -41,11 +42,7 @@ eachTuple fn list =
             []
 
 
-
--- TODO: trianglesWithNormals
-
-
-triangles fn =
+triangles parametricFn normalizeFn =
     let
         slices =
             50
@@ -67,13 +64,36 @@ triangles fn =
                                         toFloat i / stacks
 
                                     p0 =
-                                        fn u v
+                                        parametricFn u v
 
-                                    -- normal =
-                                    --     normalize fn u v
+                                    normal =
+                                        normalizeFn u v
                                 in
-                                    ( p0, indexes slices stacks i j )
+                                    ( p0, normal, indexes slices stacks i j )
                             )
                 )
             |> concatMap identity
-            |> foldl (\( v, i ) ( av, ai ) -> ( v :: av, i ++ ai )) ( [], [] )
+            |> foldl (\( v, n, i ) ( av, an, ai ) -> ( v :: av, n :: an, i ++ ai )) ( [], [], [] )
+
+
+normalizeFDiffs fn u v =
+    let
+        p0 =
+            fn u v
+
+        eps =
+            0.00001
+
+        pu =
+            if (u - eps >= 0) then
+                Vec3.sub p0 (fn (u - eps) v)
+            else
+                Vec3.sub (fn (u + eps) v) p0
+
+        pv =
+            if (v - eps >= 0) then
+                Vec3.sub p0 (fn u (v - eps))
+            else
+                Vec3.sub (fn u (v + eps)) p0
+    in
+        Vec3.cross pu pv |> Vec3.normalize
