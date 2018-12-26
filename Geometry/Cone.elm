@@ -7,6 +7,7 @@ import List.Extra exposing (zip, last)
 import Tuple
 import Geometry.Plane as Plane exposing (Plane)
 import Geometry.Ellipse as Ellipse exposing (Ellipse)
+import Geometry.Sphere as Sphere exposing (Sphere)
 import Geometry exposing (epsilon)
 
 
@@ -96,30 +97,54 @@ toMesh cone =
             |> foldl (\( v, n, i ) ( av, an, ai ) -> ( v :: av, n :: an, i ++ ai )) ( [], [], [] )
 
 
+sphere0 : Cone -> Plane -> Sphere
+sphere0 cone plane =
+    let
+        r0 =
+            (Vec3.dot (Vec3.sub cone.vertex plane.point) (Vec3.scale (sin cone.angle) plane.normal))
+                / ((sin cone.angle) + Vec3.dot cone.axis plane.normal)
+
+        center0 =
+            Vec3.sub cone.vertex <| Vec3.scale (r0 / sin cone.angle) cone.axis
+    in
+        Sphere r0 center0
+
+
+sphere1 : Cone -> Plane -> Sphere
+sphere1 cone plane =
+    let
+        r1 =
+            (Vec3.dot (Vec3.sub cone.vertex plane.point) (Vec3.scale (sin cone.angle) plane.normal))
+                / ((sin cone.angle) - Vec3.dot cone.axis plane.normal)
+
+        center1 =
+            Vec3.add cone.vertex <| Vec3.scale (r1 / sin cone.angle) cone.axis
+    in
+        Sphere r1 center1
+
+
 focus0 : Cone -> Plane -> Vec3
 focus0 cone plane =
     let
-        r =
-            (Vec3.dot (Vec3.sub cone.vertex plane.point) (Vec3.scale (sin cone.angle) plane.normal))
-                / ((sin cone.angle) + Vec3.dot cone.axis plane.normal)
+        sph =
+            sphere0 cone plane
     in
         Vec3.sub cone.vertex <|
             Vec3.add
-                (Vec3.scale (r / (sin cone.angle)) cone.axis)
-                (Vec3.scale r plane.normal)
+                (Vec3.scale (sph.radius / (sin cone.angle)) cone.axis)
+                (Vec3.scale sph.radius plane.normal)
 
 
 focus1 : Cone -> Plane -> Vec3
 focus1 cone plane =
     let
-        r =
-            (Vec3.dot (Vec3.sub cone.vertex plane.point) (Vec3.scale (sin cone.angle) plane.normal))
-                / ((sin cone.angle) - Vec3.dot cone.axis plane.normal)
+        sph =
+            sphere1 cone plane
     in
         Vec3.add cone.vertex <|
             Vec3.sub
-                (Vec3.scale (r / (sin cone.angle)) cone.axis)
-                (Vec3.scale r plane.normal)
+                (Vec3.scale (sph.radius / (sin cone.angle)) cone.axis)
+                (Vec3.scale sph.radius plane.normal)
 
 
 intersectPlane : Cone -> Plane -> Ellipse
@@ -161,6 +186,10 @@ intersectPlane cone plane =
 
         minorRadius =
             t * sinAlpha / (sqrt (abs b))
+
+        r1 =
+            (Vec3.dot (Vec3.sub cone.vertex plane.point) (Vec3.scale (sin cone.angle) plane.normal))
+                / ((sin cone.angle) - Vec3.dot cone.axis plane.normal)
     in
         { center = center
         , majorAxis = majorAxis
@@ -169,4 +198,5 @@ intersectPlane cone plane =
         , minorRadius = minorRadius
         , focus0 = focus0 cone plane
         , focus1 = focus1 cone plane
+        , normal = plane.normal
         }

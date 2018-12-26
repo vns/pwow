@@ -83,11 +83,14 @@ coordinateAxes =
 
 {-| Create a mesh of an ellipse
 -}
-ellipse : Ellipse -> Mesh Vertex
+ellipse : Ellipse -> Mesh Attributes
 ellipse anEllipse =
-    Ellipse.toMesh anEllipse
-        |> map Vertex
-        |> WebGL.lineLoop
+    let
+        ( vertices, normals ) =
+            Ellipse.toMesh anEllipse
+    in
+        map2 Attributes vertices normals
+            |> WebGL.triangleFan
 
 
 sphere : Sphere -> Mesh Attributes

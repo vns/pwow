@@ -14,10 +14,11 @@ type alias Ellipse =
     , minorRadius : Float
     , focus0 : Vec3
     , focus1 : Vec3
+    , normal : Vec3
     }
 
 
-toMesh : Ellipse -> List Vec3
+toMesh : Ellipse -> ( List Vec3, List Vec3 )
 toMesh ellipse =
     let
         a =
@@ -48,5 +49,6 @@ toMesh ellipse =
                                     (Vec3.scale (cos theta * a) ellipse.majorAxis)
                                     (Vec3.scale (sin theta * b) ellipse.minorAxis)
                     in
-                        p0
+                        ( p0, ellipse.normal )
                 )
+            |> foldl (\( v, n ) ( av, an ) -> ( v :: av, n :: an )) ( [], [] )
