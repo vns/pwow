@@ -12,6 +12,8 @@ type alias Ellipse =
     , minorAxis : Vec3
     , majorRadius : Float
     , minorRadius : Float
+    , focus0 : Vec3
+    , focus1 : Vec3
     }
 
 

@@ -121,7 +121,17 @@ aCone =
 
 aSphere : Sphere
 aSphere =
-    (Sphere 0.77 (vec3 0.0 0.9 0.0))
+    (Sphere 0.75 (vec3 0.0 0.9 0.0))
+
+
+anEllipse : Ellipse
+anEllipse =
+    Cone.intersectPlane aCone aPlane
+
+
+aPoint : Vec3 -> Sphere
+aPoint center =
+    (Sphere 0.03 center)
 
 
 view : Model -> Html msg
@@ -162,7 +172,29 @@ view model =
           --       (camera 1)
           --       (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 0.7)
           --   )
-          WebGL.entity
+          WebGL.entityWith
+            [-- Blend.add Blend.srcAlpha Blend.one
+            ]
+            Dandelin.Shader.vertex
+            Dandelin.Shader.fragment
+            (Dandelin.Mesh.sphere (aPoint (.focus0 anEllipse)))
+            (Dandelin.Shader.Uniforms
+                (camera 1)
+                (vec4 0.0 0.0 0.0 1)
+            )
+        , WebGL.entityWith
+            [-- Blend.add Blend.srcAlpha Blend.one
+            ]
+            Dandelin.Shader.vertex
+            Dandelin.Shader.fragment
+            (Dandelin.Mesh.sphere (aPoint (.focus1 anEllipse)))
+            (Dandelin.Shader.Uniforms
+                (camera 1)
+                (vec4 0.0 0.0 0.0 1)
+            )
+        , WebGL.entityWith
+            [ Blend.add Blend.srcAlpha Blend.one
+            ]
             Dandelin.Shader.vertex
             Dandelin.Shader.fragment
             (Dandelin.Mesh.sphere aSphere)
@@ -194,7 +226,7 @@ view model =
         , WebGL.entity
             Dandelin.Shader.simpleVertex
             Dandelin.Shader.simpleFragment
-            (Dandelin.Mesh.ellipse aCone aPlane)
+            (Dandelin.Mesh.ellipse anEllipse)
             (Dandelin.Shader.Uniforms
                 (camera 1)
                 (vec4 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF) 1.0)

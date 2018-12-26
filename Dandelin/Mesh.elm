@@ -81,17 +81,13 @@ coordinateAxes =
         ]
 
 
-{-| Create a mesh of the conic section produced by a given plane
+{-| Create a mesh of an ellipse
 -}
-ellipse : Cone -> Plane -> Mesh Vertex
-ellipse aCone aPlane =
-    let
-        anEllipse =
-            Cone.intersectPlane aCone aPlane
-    in
-        Ellipse.toMesh anEllipse
-            |> map Vertex
-            |> WebGL.lineLoop
+ellipse : Ellipse -> Mesh Vertex
+ellipse anEllipse =
+    Ellipse.toMesh anEllipse
+        |> map Vertex
+        |> WebGL.lineLoop
 
 
 sphere : Sphere -> Mesh Attributes
