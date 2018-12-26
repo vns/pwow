@@ -8,8 +8,8 @@ import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 as Vec4 exposing (Vec4, vec4)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Time
-import WebGL exposing (Mesh, Shader)
-import WebGL.Settings exposing (back, front)
+import WebGL
+import WebGL.Settings exposing (Setting, FaceMode)
 import WebGL.Settings.Blend as Blend
 import WebGL.Settings.DepthTest as DepthTest
 import List exposing (..)
@@ -20,8 +20,8 @@ import Geometry.Plane as Plane exposing (Plane)
 import Geometry.Cone as Cone exposing (Cone)
 import Geometry.Ellipse as Ellipse exposing (Ellipse)
 import Geometry.Sphere as Sphere exposing (Sphere)
-import Dandelin.Mesh
-import Dandelin.Shader exposing (Attributes, Uniforms)
+import Dandelin.Mesh as Mesh
+import Dandelin.Shader as Shader exposing (Attributes, Uniforms)
 
 
 type Msg
@@ -31,7 +31,7 @@ type Msg
 type alias Model =
     { time : Float
     , angle : Float
-    , cone : Mesh Attributes
+    , cone : WebGL.Mesh Attributes
     }
 
 
@@ -55,7 +55,7 @@ init _ =
     ( { time = 0
       , angle = 0
       , cone =
-            Dandelin.Mesh.cone aCone
+            Mesh.cone aCone
       }
     , Cmd.none
     )
@@ -192,6 +192,42 @@ aPoint center =
     (Sphere 0.025 center)
 
 
+objectWith : List Setting -> WebGL.Mesh Attributes -> Vec4 -> WebGL.Entity
+objectWith settings mesh color =
+    WebGL.entityWith
+        settings
+        Shader.vertex
+        Shader.fragment
+        mesh
+        (Shader.Uniforms
+            (camera 1)
+            (color)
+        )
+
+
+object : WebGL.Mesh Attributes -> Vec4 -> WebGL.Entity
+object mesh color =
+    objectWith [] mesh color
+
+
+colors :
+    { black : Vec4
+    , sphereGray : Vec4
+    , ellipseGray : Vec4
+    , coneGray : Vec4
+    , blue : Vec4
+    , green : Vec4
+    }
+colors =
+    { black = vec4 0.0 0.0 0.0 1
+    , sphereGray = vec4 0.7 0.7 0.7 0.6
+    , ellipseGray = vec4 0.3 0.3 0.3 0.5
+    , coneGray = vec4 0.41 0.41 0.41 0.6
+    , blue = vec4 0.0 0.0 1.0 1
+    , green = vec4 0.0 1.0 1.0 1
+    }
+
+
 view : Model -> Html msg
 view model =
     WebGL.toHtmlWith
@@ -203,215 +239,83 @@ view model =
         , height 700
         , style "display" "block"
         ]
-        [ -- [ WebGL.entity
-          --     vertexShader
-          --     fragmentShader
-          --     (Dandelin.Mesh.line aLine)
-          --     (Uniforms
-          --         (camera 1)
-          --         (vec4 0.8 0.0 0.0 1.0)
-          --     )
-          -- WebGL.entity
-          --   Dandelin.Shader.simpleVertex
-          --   Dandelin.Shader.simpleFragment
-          --   (Dandelin.Mesh.coordinateAxes)
-          --   (Uniforms
-          --       (camera 1)
-          --       (vec4 0.0 0.0 0.0 1.0)
-          --   )
-          WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.sphere (aPoint (.center (Cone.sphere0 aCone aPlane))))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 0.0 0.0 1)
-            )
-        , WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.sphere (aPoint (.center (Cone.sphere1 aCone aPlane))))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 0.0 0.0 1)
-            )
+        [ -- object
+          --     Mesh.coordinateAxes
+          --     colors.black
+          -- SPHERE CENTERS
+          object
+            (Mesh.point <| .center <| Cone.sphere0 aCone aPlane)
+            colors.black
+        , object
+            (Mesh.point <| .center <| Cone.sphere1 aCone aPlane)
+            colors.black
 
-        -- WebGL.entityWith
-        --   [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-        --   , DepthTest.less { write = True, near = 0.0, far = 1.0 }
-        --   ]
-        --   Dandelin.Shader.vertex
-        --   Dandelin.Shader.fragment
-        --   (Dandelin.Mesh.plane aPlane)
-        --   (Uniforms
-        --       (camera 1)
-        --       (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 0.7)
-        --   )
-        -- , WebGL.entity
-        --     Dandelin.Shader.simpleVertex
-        --     Dandelin.Shader.simpleFragment
-        --     (Dandelin.Mesh.line aTangentPoint)
-        --     (Dandelin.Shader.Uniforms
-        --         (camera 1)
-        --         (vec4 (0xE5 / 0xFF) (0x59 / 0xFF) (0x34 / 0xFF) 1.0)
-        --     )
-        , WebGL.entityWith
-            [ Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.sphere (Cone.sphere0 aCone aPlane))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.7 0.7 0.7 0.6)
-            )
+        -- LOWER SPHERE
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.one ]
+            (Mesh.sphere (Cone.sphere0 aCone aPlane))
+            colors.sphereGray
 
-        -- , WebGL.entityWith
+        -- ELLIPSE
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+            (Mesh.ellipse anEllipse)
+            colors.ellipseGray
+
+        -- UPPER SPHERE
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.one ]
+            (Mesh.sphere (Cone.sphere1 aCone aPlane))
+            colors.sphereGray
+
+        -- FOCI
+        , object
+            (Mesh.point <| .focus0 anEllipse)
+            colors.black
+        , object
+            (Mesh.point <| .focus1 anEllipse)
+            colors.black
+
+        -- LINE SEGMENTS ON THE CONE
+        , object
+            (Mesh.lineSegment aPointOnTheEllipse (.focus0 anEllipse))
+            colors.blue
+        , object
+            (Mesh.lineSegment aPointOnTheEllipse (.focus1 anEllipse))
+            colors.green
+
+        -- THE CONE
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+            , DepthTest.less { write = False, near = 0.0, far = 1.0 }
+            , WebGL.Settings.cullFace WebGL.Settings.back
+            ]
+            (Mesh.cone aCone)
+            colors.coneGray
+
+        -- INTERSECTING PLANE
+        -- , objectWith
         --     [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
         --     , DepthTest.less { write = True, near = 0.0, far = 1.0 }
         --     ]
-        --     Dandelin.Shader.vertex
-        --     Dandelin.Shader.fragment
-        --     (Dandelin.Mesh.plane anotherPlane)
-        --     (Uniforms
-        --         (camera 1)
-        --         (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 0.7)
-        --     )
-        -- ELLIPSE
-        , WebGL.entityWith
-            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-            , DepthTest.less { write = False, near = 0, far = 1 }
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.ellipse anEllipse)
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.3 0.3 0.3 0.5)
-            )
-        , WebGL.entityWith
-            [ Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.sphere (Cone.sphere1 aCone aPlane))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.7 0.7 0.7 0.6)
-            )
-        , WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.sphere (aPoint (.focus0 anEllipse)))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 0.0 0.0 1)
-            )
-        , WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.lineSegment aPointOnTheEllipse (.focus0 anEllipse))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 0.0 1.0 1)
-            )
-        , WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.sphere (aPoint (.focus1 anEllipse)))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 0.0 0.0 1)
-            )
-        , WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.lineSegment aPointOnTheEllipse (.focus1 anEllipse))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 1.0 1.0 1)
-            )
-        , WebGL.entityWith
-            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-            , DepthTest.less { write = False, near = 0.0, far = 1.0 }
-            , WebGL.Settings.cullFace back
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            model.cone
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 (0x69 / 0xFF) (0x69 / 0xFF) (0x69 / 0xFF) 0.6)
-            )
-        , WebGL.entityWith
-            [ DepthTest.always { write = True, near = 0, far = 1 }
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.sphere (aPoint aTangentPoint1))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 0.0 0.0 1)
-            )
-        , WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.sphere (aPoint aTangentPoint0))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 0.0 0.0 1)
-            )
-        , WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.sphere (aPoint aPointOnTheEllipse))
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 0.0 0.0 1)
-            )
-        , WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.lineSegment aPointOnTheEllipse aTangentPoint0)
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 0.0 1.0 1)
-            )
-        , WebGL.entityWith
-            [-- Blend.add Blend.srcAlpha Blend.one
-            ]
-            Dandelin.Shader.vertex
-            Dandelin.Shader.fragment
-            (Dandelin.Mesh.lineSegment aPointOnTheEllipse aTangentPoint1)
-            (Dandelin.Shader.Uniforms
-                (camera 1)
-                (vec4 0.0 1.0 1.0 1)
-            )
+        --     (Mesh.plane aPlane)
+        --     colors.ellipseGray
+        -- TANGENT POINTS
+        , object
+            (Mesh.point aTangentPoint0)
+            colors.black
+        , object
+            (Mesh.point aTangentPoint1)
+            colors.black
+        , object
+            (Mesh.point aPointOnTheEllipse)
+            colors.black
 
-        -- , WebGL.entity
-        --     vertexShader
-        --     fragmentShader
-        --     (normalMesh aPlane)
-        --     (Uniforms
-        --         (camera 1)
-        --         (vec4 0.9 0.0 0.0 1.0)
-        --     )
+        -- LINE SEGMENTS IN THE CONE
+        , object
+            (Mesh.lineSegment aPointOnTheEllipse aTangentPoint0)
+            colors.blue
+        , object
+            (Mesh.lineSegment aPointOnTheEllipse aTangentPoint1)
+            colors.green
         ]

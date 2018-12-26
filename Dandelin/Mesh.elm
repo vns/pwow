@@ -85,12 +85,12 @@ planeNormal aPlane =
 
 {-| Create a mesh for the coordinate axes
 -}
-coordinateAxes : Mesh Vertex
+coordinateAxes : Mesh Attributes
 coordinateAxes =
     WebGL.lines
-        [ ( Vertex (vec3 -10 0 0), Vertex (vec3 10 0 0) )
-        , ( Vertex (vec3 0 -10 0), Vertex (vec3 0 10 0) )
-        , ( Vertex (vec3 0 0 -10), Vertex (vec3 0 0 10) )
+        [ ( Attributes (vec3 -10 0 0) (vec3 0 0 0), Attributes (vec3 10 0 0) (vec3 0 0 0) )
+        , ( Attributes (vec3 0 -10 0) (vec3 0 0 0), Attributes (vec3 0 10 0) (vec3 0 0 0) )
+        , ( Attributes (vec3 0 0 -10) (vec3 0 0 0), Attributes (vec3 0 0 10) (vec3 0 0 0) )
         ]
 
 
@@ -113,3 +113,8 @@ sphere aSphere =
             Sphere.toMesh aSphere
     in
         WebGL.indexedTriangles (map2 Attributes vertices normals) indices
+
+
+point : Vec3 -> Mesh Attributes
+point p =
+    sphere (Sphere 0.025 p)
