@@ -37,8 +37,10 @@ type alias Model =
     { clock : Float
     , h0 : Animation
     , h1 : Animation
+    , theta : Animation
     , clockEnabled : Bool
     , step : Int
+    , rotatingPlane : Plane
     }
 
 
@@ -59,6 +61,8 @@ init _ =
       , step = 0
       , h0 = static 0
       , h1 = static 0
+      , theta = static 0
+      , rotatingPlane = anotherPlane
       }
     , Cmd.none
     )
@@ -80,7 +84,7 @@ update msg model =
         Tick dt ->
             ( { model
                 | clock = model.clock + dt
-                , clockEnabled = not (isDone model.clock model.h0 && isDone model.clock model.h1)
+                , clockEnabled = not ((isDone model.clock model.h0 && isDone model.clock model.h1)) || not (isDone model.clock model.theta)
               }
             , Cmd.none
             )
@@ -99,8 +103,14 @@ update msg model =
                     case step of
                         1 ->
                             { model
-                                | h0 = animation 0 |> from (h0max + 1) |> to h0max |> duration 4000
-                                , h1 = animation 0 |> from 0.1 |> to h1max |> duration 4000
+                                | h0 = animation model.clock |> from (h0max + 1) |> to h0max |> duration 4000
+                                , h1 = animation model.clock |> from 0.1 |> to h1max |> duration 4000
+                                , clockEnabled = True
+                            }
+
+                        2 ->
+                            { model
+                                | theta = animation model.clock |> from 0 |> to (2 * pi) |> duration 10000
                                 , clockEnabled = True
                             }
 
@@ -164,31 +174,31 @@ animatedSphere sphere h =
         }
 
 
-aTangentPoint0 : Vec3
-aTangentPoint0 =
-    aTangentPoint (Cone.sphere0 aCone aPlane)
+aTangentPoint0 : Plane -> Vec3
+aTangentPoint0 plane =
+    aTangentPoint plane (Cone.sphere0 aCone aPlane)
 
 
-aTangentPoint1 : Vec3
-aTangentPoint1 =
-    aTangentPoint (Cone.sphere1 aCone aPlane)
+aTangentPoint1 : Plane -> Vec3
+aTangentPoint1 plane =
+    aTangentPoint plane (Cone.sphere1 aCone aPlane)
 
 
-aTangentPoint : Sphere -> Vec3
-aTangentPoint sphere =
+aTangentPoint : Plane -> Sphere -> Vec3
+aTangentPoint plane sphere =
     let
         direction =
-            Mat4.transform (Mat4.makeRotate aCone.angle anotherPlane.normal) <|
-                Vec3.normalize (Vec3.cross anotherPlane.normal aCone.axis)
+            Mat4.transform (Mat4.makeRotate aCone.angle plane.normal) <|
+                Vec3.normalize (Vec3.cross plane.normal aCone.axis)
     in
         Vec3.add sphere.center (Vec3.scale (abs sphere.radius) direction)
 
 
-aPointOnTheEllipse : Vec3
-aPointOnTheEllipse =
+aPointOnTheEllipse : Plane -> Vec3
+aPointOnTheEllipse plane =
     let
         line =
-            Line aTangentPoint1 (Vec3.sub aTangentPoint1 aTangentPoint0)
+            Line (aTangentPoint1 plane) (Vec3.sub (aTangentPoint1 plane) (aTangentPoint0 plane))
 
         point =
             Maybe.withDefault (vec3 0 0 0) (Plane.intersectLine aPlane line)
@@ -256,6 +266,18 @@ view model =
 
         h0 =
             animate model.clock model.h0
+
+        theta =
+            animate model.clock model.theta
+
+        oldPlane =
+            model.rotatingPlane
+
+        rotatingPlane =
+            { oldPlane
+                | normal = Mat4.transform (Mat4.makeRotate -theta Vec3.j) model.rotatingPlane.normal
+            }
+                |> Debug.log "rotatingPlane"
     in
         div []
             [ ul []
@@ -344,11 +366,11 @@ view model =
                         -- LINE SEGMENTS ON THE CONE
                         , SceneObject 2 <|
                             object
-                                (Mesh.lineSegment aPointOnTheEllipse (.focus0 anEllipse))
+                                (Mesh.lineSegment (aPointOnTheEllipse rotatingPlane) (.focus0 anEllipse))
                                 colors.strokeBlue
                         , SceneObject 2 <|
                             object
-                                (Mesh.lineSegment aPointOnTheEllipse (.focus1 anEllipse))
+                                (Mesh.lineSegment (aPointOnTheEllipse rotatingPlane) (.focus1 anEllipse))
                                 colors.strokeGreen
 
                         -- THE CONE
@@ -370,47 +392,47 @@ view model =
                         -- TANGENT POINTS
                         , SceneObject 2 <|
                             object
-                                (Mesh.point aTangentPoint0)
+                                (Mesh.point (aTangentPoint0 rotatingPlane))
                                 colors.black
                         , SceneObject 2 <|
                             object
-                                (Mesh.point aTangentPoint1)
+                                (Mesh.point (aTangentPoint1 rotatingPlane))
                                 colors.black
 
                         -- CIRCLES
                         , SceneObject 2 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.circle (Cone.circleSection aCone aTangentPoint0) |> Mesh.fill)
+                                (Mesh.circle (Cone.circleSection aCone (aTangentPoint0 rotatingPlane)) |> Mesh.fill)
                                 colors.fillBlue
                         , SceneObject 2 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.circle (Cone.circleSection aCone aTangentPoint0) |> Mesh.stroke)
+                                (Mesh.circle (Cone.circleSection aCone (aTangentPoint0 rotatingPlane)) |> Mesh.stroke)
                                 colors.strokeBlue
                         , SceneObject 2 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.circle (Cone.circleSection aCone aTangentPoint1) |> Mesh.fill)
+                                (Mesh.circle (Cone.circleSection aCone (aTangentPoint1 rotatingPlane)) |> Mesh.fill)
                                 colors.fillGreen
                         , SceneObject 2 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.circle (Cone.circleSection aCone aTangentPoint1) |> Mesh.stroke)
+                                (Mesh.circle (Cone.circleSection aCone (aTangentPoint1 rotatingPlane)) |> Mesh.stroke)
                                 colors.strokeGreen
                         , SceneObject 2 <|
                             object
-                                (Mesh.point aPointOnTheEllipse)
+                                (Mesh.point (aPointOnTheEllipse rotatingPlane))
                                 colors.black
 
                         -- LINE SEGMENTS IN THE CONE
                         , SceneObject 2 <|
                             object
-                                (Mesh.lineSegment aPointOnTheEllipse aTangentPoint0)
+                                (Mesh.lineSegment (aPointOnTheEllipse rotatingPlane) (aTangentPoint0 rotatingPlane))
                                 colors.strokeBlue
                         , SceneObject 2 <|
                             object
-                                (Mesh.lineSegment aPointOnTheEllipse aTangentPoint1)
+                                (Mesh.lineSegment (aPointOnTheEllipse rotatingPlane) (aTangentPoint1 rotatingPlane))
                                 colors.strokeGreen
                         ]
             ]
