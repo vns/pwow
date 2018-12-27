@@ -22,6 +22,7 @@ import Geometry.Ellipse as Ellipse exposing (Ellipse)
 import Geometry.Sphere as Sphere exposing (Sphere)
 import Dandelin.Mesh as Mesh
 import Dandelin.Shader as Shader exposing (Attributes, Uniforms)
+import Animation exposing (..)
 
 
 type Msg
@@ -29,8 +30,10 @@ type Msg
 
 
 type alias Model =
-    { time : Float
-    , angle : Float
+    { clock : Float
+    , h0 : Animation
+    , h1 : Animation
+    , clockEnabled : Bool
     }
 
 
@@ -51,18 +54,32 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( { time = 0
-      , angle = 0
-      }
-    , Cmd.none
-    )
+    let
+        h0max =
+            Vec3.sub aCone.vertex (.center <| Cone.sphere0 aCone aPlane)
+                |> Vec3.length
+
+        h1max =
+            Vec3.sub aCone.vertex (.center <| Cone.sphere1 aCone aPlane)
+                |> Vec3.length
+    in
+        ( { clock = 0
+          , clockEnabled = True
+          , h0 = animation 0 |> from (h0max + 1) |> to h0max |> duration 4000
+          , h1 = animation 0 |> from 0.1 |> to h1max |> duration 4000
+          }
+        , Cmd.none
+        )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [-- onAnimationFrameDelta ((\dt -> dt / 1000) >> Tick)
-        ]
+    if model.clockEnabled then
+        Sub.batch
+            [ onAnimationFrameDelta Tick
+            ]
+    else
+        Sub.none
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -70,8 +87,8 @@ update msg model =
     case msg of
         Tick dt ->
             ( { model
-                | time = dt + model.time
-                , angle = model.angle + pi / 180
+                | clock = model.clock + dt
+                , clockEnabled = not (isDone model.clock model.h0 && isDone model.clock model.h1)
               }
             , Cmd.none
             )
@@ -117,6 +134,18 @@ aCone =
 anEllipse : Ellipse
 anEllipse =
     Cone.intersectPlane aCone aPlane
+
+
+animatedSphere : Sphere -> Float -> Sphere
+animatedSphere sphere h =
+    let
+        cone =
+            aCone
+    in
+        { sphere
+            | center = Vec3.add cone.vertex (Vec3.scale h cone.axis)
+            , radius = h * sin cone.angle
+        }
 
 
 aTangentPoint0 : Vec3
@@ -199,127 +228,136 @@ colors =
 
 view : Model -> Html msg
 view model =
-    WebGL.toHtmlWith
-        [ WebGL.alpha True
-        , WebGL.antialias
-        , WebGL.depth 1
-        ]
-        [ width 700
-        , height 700
-        , style "display" "block"
-        ]
-        [ -- object
-          --     Mesh.coordinateAxes
-          --     colors.black
-          -- SPHERE CENTERS
-          object
-            (Mesh.point <| .center <| Cone.sphere0 aCone aPlane)
-            colors.black
-        , object
-            (Mesh.point <| .center <| Cone.sphere1 aCone aPlane)
-            colors.black
+    let
+        h1 =
+            animate model.clock model.h1
 
-        -- LOWER SPHERE
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.one ]
-            (Mesh.sphere (Cone.sphere0 aCone aPlane))
-            colors.sphereGray
-
-        -- INTERSECTING PLANE
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+        h0 =
+            animate model.clock model.h0
+                |> Debug.log "h0"
+    in
+        WebGL.toHtmlWith
+            [ WebGL.alpha True
+            , WebGL.antialias
+            , WebGL.depth 1
             ]
-            (Mesh.plane aPlane)
-            colors.planeGray
-
-        -- ELLIPSE
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
-            (Mesh.ellipse anEllipse |> Mesh.fill)
-            colors.fillRed
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
-            (Mesh.ellipse anEllipse |> Mesh.stroke)
-            colors.strokeRed
-
-        -- , object
-        --     (Mesh.line <| Line anEllipse.center anEllipse.majorAxis)
-        --     colors.black
-        -- , object
-        --     (Mesh.line <| Line anEllipse.center anEllipse.minorAxis)
-        --     colors.black
-        -- UPPER SPHERE
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.one
-            , DepthTest.less { write = False, near = 0.0, far = 1.0 }
+            [ width 700
+            , height 700
+            , style "display" "block"
             ]
-            (Mesh.sphere (Cone.sphere1 aCone aPlane))
-            colors.sphereGray
+            [ -- object
+              --     Mesh.coordinateAxes
+              --     colors.black
+              -- SPHERE CENTERS
+              object
+                (Mesh.point <| .center <| Cone.sphere0 aCone aPlane)
+                colors.black
+            , object
+                (Mesh.point <| .center <| Cone.sphere1 aCone aPlane)
+                colors.black
 
-        -- FOCI
-        , object
-            (Mesh.point <| .focus0 anEllipse)
-            colors.black
-        , object
-            (Mesh.point <| .focus1 anEllipse)
-            colors.black
+            -- LOWER SPHERE
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.one ]
+                (Mesh.bigSphere (animatedSphere (Cone.sphere0 aCone aPlane) h0))
+                colors.sphereGray
 
-        -- LINE SEGMENTS ON THE CONE
-        , object
-            (Mesh.lineSegment aPointOnTheEllipse (.focus0 anEllipse))
-            colors.strokeBlue
-        , object
-            (Mesh.lineSegment aPointOnTheEllipse (.focus1 anEllipse))
-            colors.strokeGreen
+            -- INTERSECTING PLANE
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+                ]
+                (Mesh.plane aPlane)
+                colors.planeGray
 
-        -- THE CONE
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-            , DepthTest.less { write = False, near = 0.0, far = 1.0 }
-            , WebGL.Settings.cullFace WebGL.Settings.back
+            -- ELLIPSE
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+                (Mesh.ellipse anEllipse |> Mesh.fill)
+                colors.fillRed
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+                (Mesh.ellipse anEllipse |> Mesh.stroke)
+                colors.strokeRed
+
+            -- , object
+            --     (Mesh.line <| Line anEllipse.center anEllipse.majorAxis)
+            --     colors.black
+            -- , object
+            --     (Mesh.line <| Line anEllipse.center anEllipse.minorAxis)
+            --     colors.black
+            -- UPPER SPHERE
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.one
+                , DepthTest.less { write = False, near = 0.0, far = 1.0 }
+                ]
+                -- (Mesh.sphere (Cone.sphere1 aCone aPlane))
+                (Mesh.sphere (animatedSphere (Cone.sphere1 aCone aPlane) h1))
+                colors.sphereGray
+
+            -- FOCI
+            , object
+                (Mesh.point <| .focus0 anEllipse)
+                colors.black
+            , object
+                (Mesh.point <| .focus1 anEllipse)
+                colors.black
+
+            -- LINE SEGMENTS ON THE CONE
+            , object
+                (Mesh.lineSegment aPointOnTheEllipse (.focus0 anEllipse))
+                colors.strokeBlue
+            , object
+                (Mesh.lineSegment aPointOnTheEllipse (.focus1 anEllipse))
+                colors.strokeGreen
+
+            -- THE CONE
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+                , DepthTest.less { write = False, near = 0.0, far = 1.0 }
+                , WebGL.Settings.cullFace WebGL.Settings.back
+                ]
+                (Mesh.cone aCone)
+                colors.coneGray
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+                ]
+                (Mesh.circle (Cone.bottomSection aCone) |> Mesh.fill)
+                colors.bottomGray
+
+            -- TANGENT POINTS
+            , object
+                (Mesh.point aTangentPoint0)
+                colors.black
+            , object
+                (Mesh.point aTangentPoint1)
+                colors.black
+
+            -- CIRCLES
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.one ]
+                (Mesh.circle (Cone.circleSection aCone aTangentPoint0) |> Mesh.fill)
+                colors.fillBlue
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.one ]
+                (Mesh.circle (Cone.circleSection aCone aTangentPoint0) |> Mesh.stroke)
+                colors.strokeBlue
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.one ]
+                (Mesh.circle (Cone.circleSection aCone aTangentPoint1) |> Mesh.fill)
+                colors.fillGreen
+            , objectWith
+                [ Blend.add Blend.srcAlpha Blend.one ]
+                (Mesh.circle (Cone.circleSection aCone aTangentPoint1) |> Mesh.stroke)
+                colors.strokeGreen
+            , object
+                (Mesh.point aPointOnTheEllipse)
+                colors.black
+
+            -- LINE SEGMENTS IN THE CONE
+            , object
+                (Mesh.lineSegment aPointOnTheEllipse aTangentPoint0)
+                colors.strokeBlue
+            , object
+                (Mesh.lineSegment aPointOnTheEllipse aTangentPoint1)
+                colors.strokeGreen
             ]
-            (Mesh.cone aCone)
-            colors.coneGray
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-            ]
-            (Mesh.circle (Cone.bottomSection aCone) |> Mesh.fill)
-            colors.bottomGray
-
-        -- TANGENT POINTS
-        , object
-            (Mesh.point aTangentPoint0)
-            colors.black
-        , object
-            (Mesh.point aTangentPoint1)
-            colors.black
-
-        -- CIRCLES
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.one ]
-            (Mesh.circle (Cone.circleSection aCone aTangentPoint0) |> Mesh.fill)
-            colors.fillBlue
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.one ]
-            (Mesh.circle (Cone.circleSection aCone aTangentPoint0) |> Mesh.stroke)
-            colors.strokeBlue
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.one ]
-            (Mesh.circle (Cone.circleSection aCone aTangentPoint1) |> Mesh.fill)
-            colors.fillGreen
-        , objectWith
-            [ Blend.add Blend.srcAlpha Blend.one ]
-            (Mesh.circle (Cone.circleSection aCone aTangentPoint1) |> Mesh.stroke)
-            colors.strokeGreen
-        , object
-            (Mesh.point aPointOnTheEllipse)
-            colors.black
-
-        -- LINE SEGMENTS IN THE CONE
-        , object
-            (Mesh.lineSegment aPointOnTheEllipse aTangentPoint0)
-            colors.strokeBlue
-        , object
-            (Mesh.lineSegment aPointOnTheEllipse aTangentPoint1)
-            colors.strokeGreen
-        ]

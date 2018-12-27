@@ -1,7 +1,7 @@
-module Geometry.Sphere exposing (Sphere, toMesh)
+module Geometry.Sphere exposing (Sphere, toMesh, toMeshWith)
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Geometry
+import Geometry exposing (Config)
 
 
 type alias Sphere =
@@ -30,6 +30,10 @@ parametrize sphere u v =
 
 normalize sphere u v =
     parametrize sphere u v |> Vec3.normalize
+
+
+toMeshWith config sphere =
+    Geometry.trianglesWith config (parametrize sphere) (normalize sphere)
 
 
 toMesh sphere =

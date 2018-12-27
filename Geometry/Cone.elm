@@ -27,7 +27,7 @@ toMesh cone =
             1
 
         radialSegments =
-            50
+            40
 
         halfHeight =
             cone.height / 2

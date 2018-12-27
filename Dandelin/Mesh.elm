@@ -138,8 +138,21 @@ sphere aSphere =
         WebGL.indexedTriangles (map2 Attributes vertices normals) indices
 
 
+bigSphere : Sphere -> Mesh Attributes
+bigSphere aSphere =
+    let
+        ( vertices, normals, indices ) =
+            Sphere.toMeshWith { stackCount = 50, sliceCount = 50 } aSphere
+    in
+        WebGL.indexedTriangles (map2 Attributes vertices normals) indices
+
+
 {-| Create a mesh for a point
 -}
 point : Vec3 -> Mesh Attributes
 point p =
-    sphere (Sphere 0.025 p)
+    let
+        ( vertices, normals, indices ) =
+            Sphere.toMeshWith { stackCount = 5, sliceCount = 5 } (Sphere 0.025 p)
+    in
+        WebGL.indexedTriangles (map2 Attributes vertices normals) indices
