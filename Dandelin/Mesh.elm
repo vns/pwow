@@ -8,6 +8,7 @@ import Geometry.Line as Line exposing (Line)
 import Geometry.Plane as Plane exposing (Plane)
 import Geometry.Cone as Cone exposing (Cone)
 import Geometry.Ellipse as Ellipse exposing (Ellipse)
+import Geometry.Circle as Circle exposing (Circle)
 import Geometry.Sphere as Sphere exposing (Sphere)
 import WebGL exposing (Mesh)
 import Dandelin.Shader exposing (Vertex, Attributes)
@@ -26,15 +27,15 @@ cone aCone =
 
 {-| Create a mesh for a given line
 -}
-line : Line -> Mesh Vertex
+line : Line -> Mesh Attributes
 line aLine =
     let
         offset =
             Vec3.scale 3.0 aLine.direction
     in
         WebGL.lines
-            [ ( Vertex (Vec3.add aLine.origin offset)
-              , Vertex (Vec3.sub aLine.origin offset)
+            [ ( Attributes (Vec3.add aLine.origin offset) (vec3 0 0 0)
+              , Attributes (Vec3.sub aLine.origin offset) (vec3 0 0 0)
               )
             ]
 
@@ -106,6 +107,29 @@ ellipse anEllipse =
             |> WebGL.triangleFan
 
 
+circle : Circle -> List Attributes
+circle aCircle =
+    let
+        ( vertices, normals ) =
+            Circle.toMesh aCircle
+    in
+        map2 Attributes vertices normals
+
+
+circleStroke : Circle -> Mesh Attributes
+circleStroke aCircle =
+    circle aCircle
+        |> WebGL.lineLoop
+
+
+circleFill : Circle -> Mesh Attributes
+circleFill aCircle =
+    circle aCircle
+        |> WebGL.triangleFan
+
+
+{-| Create a mesh for a sphere
+-}
 sphere : Sphere -> Mesh Attributes
 sphere aSphere =
     let
@@ -115,6 +139,8 @@ sphere aSphere =
         WebGL.indexedTriangles (map2 Attributes vertices normals) indices
 
 
+{-| Create a mesh for a point
+-}
 point : Vec3 -> Mesh Attributes
 point p =
     sphere (Sphere 0.025 p)

@@ -81,10 +81,10 @@ camera : Float -> Mat4
 camera ratio =
     let
         eye =
-            vec3 4 1 10
+            vec3 0 0 11
 
         center =
-            vec3 0 -1 0
+            vec3 0 -1.5 0
     in
         (Mat4.makeLookAt eye center Vec3.j)
             |> Mat4.mul (Mat4.makePerspective 45 ratio 0.01 100)
@@ -97,7 +97,7 @@ light =
 
 aPlane : Plane
 aPlane =
-    Plane (Vec3.normalize (vec3 -1.0 2.5 1.0)) (vec3 0.0 0.0 0.0)
+    Plane (Vec3.normalize (vec3 -1.0 3.0 1.0)) (vec3 0.0 0.0 0.0)
 
 
 anotherPlane : Plane
@@ -168,18 +168,22 @@ object mesh color =
 colors :
     { black : Vec4
     , sphereGray : Vec4
-    , ellipseGray : Vec4
+    , planeGray : Vec4
     , coneGray : Vec4
+    , bottomGray : Vec4
     , blue : Vec4
     , green : Vec4
+    , red : Vec4
     }
 colors =
     { black = vec4 0.0 0.0 0.0 1
     , sphereGray = vec4 0.7 0.7 0.7 0.6
-    , ellipseGray = vec4 0.3 0.3 0.3 0.5
+    , planeGray = vec4 0.3 0.3 0.3 0.5
     , coneGray = vec4 0.41 0.41 0.41 0.6
-    , blue = vec4 0.0 0.0 1.0 1
-    , green = vec4 0.0 1.0 1.0 1
+    , bottomGray = vec4 0.3 0.3 0.3 0.2
+    , blue = vec4 0.0 0.0 1.0 0.8
+    , green = vec4 0.0 1.0 0.0 0.8
+    , red = vec4 0.3 0.0 0.0 0.5
     }
 
 
@@ -211,15 +215,30 @@ view model =
             (Mesh.sphere (Cone.sphere0 aCone aPlane))
             colors.sphereGray
 
+        -- INTERSECTING PLANE
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+            ]
+            (Mesh.plane aPlane)
+            colors.planeGray
+
         -- ELLIPSE
         , objectWith
             [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
             (Mesh.ellipse anEllipse)
-            colors.ellipseGray
+            colors.red
 
+        -- , object
+        --     (Mesh.line <| Line anEllipse.center anEllipse.majorAxis)
+        --     colors.black
+        -- , object
+        --     (Mesh.line <| Line anEllipse.center anEllipse.minorAxis)
+        --     colors.black
         -- UPPER SPHERE
         , objectWith
-            [ Blend.add Blend.srcAlpha Blend.one ]
+            [ Blend.add Blend.srcAlpha Blend.one
+            , DepthTest.less { write = False, near = 0.0, far = 1.0 }
+            ]
             (Mesh.sphere (Cone.sphere1 aCone aPlane))
             colors.sphereGray
 
@@ -247,14 +266,12 @@ view model =
             ]
             (Mesh.cone aCone)
             colors.coneGray
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+            ]
+            (Mesh.circleFill <| Cone.bottomSection aCone)
+            colors.bottomGray
 
-        -- INTERSECTING PLANE
-        -- , objectWith
-        --     [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-        --     , DepthTest.less { write = True, near = 0.0, far = 1.0 }
-        --     ]
-        --     (Mesh.plane aPlane)
-        --     colors.ellipseGray
         -- TANGENT POINTS
         , object
             (Mesh.point aTangentPoint0)
@@ -262,6 +279,14 @@ view model =
         , object
             (Mesh.point aTangentPoint1)
             colors.black
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.one ]
+            (Mesh.circleStroke (Cone.circleSection aCone aTangentPoint0))
+            colors.blue
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.one ]
+            (Mesh.circleStroke (Cone.circleSection aCone aTangentPoint1))
+            colors.green
         , object
             (Mesh.point aPointOnTheEllipse)
             colors.black

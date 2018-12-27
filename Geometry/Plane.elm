@@ -79,7 +79,7 @@ toMesh : Plane -> ( List Vec3, List Vec3 )
 toMesh plane =
     let
         scaleFactor =
-            3.5
+            3
 
         vertices =
             [ vec3 -1.0 0.0 -1.0

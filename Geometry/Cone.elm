@@ -7,6 +7,7 @@ import List.Extra exposing (zip, last)
 import Tuple
 import Geometry.Plane as Plane exposing (Plane)
 import Geometry.Ellipse as Ellipse exposing (Ellipse)
+import Geometry.Circle as Circle exposing (Circle)
 import Geometry.Sphere as Sphere exposing (Sphere)
 import Geometry exposing (epsilon)
 
@@ -200,3 +201,22 @@ intersectPlane cone plane =
         , focus1 = focus1 cone plane
         , normal = plane.normal
         }
+
+
+{-| Create a circle as a section of a plane perpendicular to the axis
+going through a point on the cone
+-}
+circleSection : Cone -> Vec3 -> Circle
+circleSection cone point =
+    { normal = Vec3.j
+    , center = Vec3.add cone.vertex (Vec3.scale (Vec3.dot cone.axis (Vec3.sub point cone.vertex)) cone.axis)
+    , radius = sin cone.angle * (Vec3.length <| Vec3.sub point cone.vertex)
+    }
+
+
+bottomSection : Cone -> Circle
+bottomSection cone =
+    { normal = Vec3.j
+    , center = Vec3.add cone.vertex (Vec3.scale cone.height cone.axis)
+    , radius = cone.height * tan cone.angle
+    }
