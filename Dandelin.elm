@@ -119,14 +119,17 @@ anEllipse =
     Cone.intersectPlane aCone aPlane
 
 
+aTangentPoint0 : Vec3
 aTangentPoint0 =
     aTangentPoint (Cone.sphere0 aCone aPlane)
 
 
+aTangentPoint1 : Vec3
 aTangentPoint1 =
     aTangentPoint (Cone.sphere1 aCone aPlane)
 
 
+aTangentPoint : Sphere -> Vec3
 aTangentPoint sphere =
     let
         direction =
@@ -136,6 +139,7 @@ aTangentPoint sphere =
         Vec3.add sphere.center (Vec3.scale (abs sphere.radius) direction)
 
 
+aPointOnTheEllipse : Vec3
 aPointOnTheEllipse =
     let
         line =
