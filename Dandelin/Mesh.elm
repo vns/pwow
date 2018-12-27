@@ -97,14 +97,13 @@ coordinateAxes =
 
 {-| Create a mesh of an ellipse
 -}
-ellipse : Ellipse -> Mesh Attributes
+ellipse : Ellipse -> List Attributes
 ellipse anEllipse =
     let
         ( vertices, normals ) =
             Ellipse.toMesh anEllipse
     in
         map2 Attributes vertices normals
-            |> WebGL.triangleFan
 
 
 circle : Circle -> List Attributes
@@ -116,15 +115,15 @@ circle aCircle =
         map2 Attributes vertices normals
 
 
-circleStroke : Circle -> Mesh Attributes
-circleStroke aCircle =
-    circle aCircle
+stroke : List Attributes -> Mesh Attributes
+stroke attributes =
+    attributes
         |> WebGL.lineLoop
 
 
-circleFill : Circle -> Mesh Attributes
-circleFill aCircle =
-    circle aCircle
+fill : List Attributes -> Mesh Attributes
+fill attributes =
+    attributes
         |> WebGL.triangleFan
 
 

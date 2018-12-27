@@ -171,9 +171,12 @@ colors :
     , planeGray : Vec4
     , coneGray : Vec4
     , bottomGray : Vec4
-    , blue : Vec4
-    , green : Vec4
-    , red : Vec4
+    , strokeBlue : Vec4
+    , strokeGreen : Vec4
+    , strokeRed : Vec4
+    , fillBlue : Vec4
+    , fillGreen : Vec4
+    , fillRed : Vec4
     }
 colors =
     { black = vec4 0.0 0.0 0.0 1
@@ -181,9 +184,12 @@ colors =
     , planeGray = vec4 0.3 0.3 0.3 0.5
     , coneGray = vec4 0.41 0.41 0.41 0.6
     , bottomGray = vec4 0.3 0.3 0.3 0.2
-    , blue = vec4 0.0 0.0 1.0 0.8
-    , green = vec4 0.0 1.0 0.0 0.8
-    , red = vec4 0.3 0.0 0.0 0.5
+    , strokeBlue = vec4 0.0 0.0 1.0 0.8
+    , strokeGreen = vec4 0.0 1.0 0.0 0.8
+    , strokeRed = vec4 1.0 0.0 0.0 0.8
+    , fillBlue = vec4 0.0 0.0 0.5 0.3
+    , fillGreen = vec4 0.0 0.5 0.0 0.3
+    , fillRed = vec4 0.3 0.0 0.0 0.5
     }
 
 
@@ -225,8 +231,12 @@ view model =
         -- ELLIPSE
         , objectWith
             [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
-            (Mesh.ellipse anEllipse)
-            colors.red
+            (Mesh.ellipse anEllipse |> Mesh.fill)
+            colors.fillRed
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+            (Mesh.ellipse anEllipse |> Mesh.stroke)
+            colors.strokeRed
 
         -- , object
         --     (Mesh.line <| Line anEllipse.center anEllipse.majorAxis)
@@ -253,10 +263,10 @@ view model =
         -- LINE SEGMENTS ON THE CONE
         , object
             (Mesh.lineSegment aPointOnTheEllipse (.focus0 anEllipse))
-            colors.blue
+            colors.strokeBlue
         , object
             (Mesh.lineSegment aPointOnTheEllipse (.focus1 anEllipse))
-            colors.green
+            colors.strokeGreen
 
         -- THE CONE
         , objectWith
@@ -269,7 +279,7 @@ view model =
         , objectWith
             [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
             ]
-            (Mesh.circleFill <| Cone.bottomSection aCone)
+            (Mesh.circle (Cone.bottomSection aCone) |> Mesh.fill)
             colors.bottomGray
 
         -- TANGENT POINTS
@@ -279,14 +289,24 @@ view model =
         , object
             (Mesh.point aTangentPoint1)
             colors.black
+
+        -- CIRCLES
         , objectWith
             [ Blend.add Blend.srcAlpha Blend.one ]
-            (Mesh.circleStroke (Cone.circleSection aCone aTangentPoint0))
-            colors.blue
+            (Mesh.circle (Cone.circleSection aCone aTangentPoint0) |> Mesh.fill)
+            colors.fillBlue
         , objectWith
             [ Blend.add Blend.srcAlpha Blend.one ]
-            (Mesh.circleStroke (Cone.circleSection aCone aTangentPoint1))
-            colors.green
+            (Mesh.circle (Cone.circleSection aCone aTangentPoint0) |> Mesh.stroke)
+            colors.strokeBlue
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.one ]
+            (Mesh.circle (Cone.circleSection aCone aTangentPoint1) |> Mesh.fill)
+            colors.fillGreen
+        , objectWith
+            [ Blend.add Blend.srcAlpha Blend.one ]
+            (Mesh.circle (Cone.circleSection aCone aTangentPoint1) |> Mesh.stroke)
+            colors.strokeGreen
         , object
             (Mesh.point aPointOnTheEllipse)
             colors.black
@@ -294,8 +314,8 @@ view model =
         -- LINE SEGMENTS IN THE CONE
         , object
             (Mesh.lineSegment aPointOnTheEllipse aTangentPoint0)
-            colors.blue
+            colors.strokeBlue
         , object
             (Mesh.lineSegment aPointOnTheEllipse aTangentPoint1)
-            colors.green
+            colors.strokeGreen
         ]
