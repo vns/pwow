@@ -1,4 +1,4 @@
-module Wireframe exposing (..)
+module Dandelin exposing (..)
 
 import Browser
 import Browser.Events exposing (onAnimationFrameDelta)
@@ -34,11 +34,6 @@ type alias Model =
     , h0 : Animation
     , h1 : Animation
     , clockEnabled : Bool
-    }
-
-
-type alias Vertex =
-    { position : Vec3
     }
 
 
@@ -234,7 +229,6 @@ view model =
 
         h0 =
             animate model.clock model.h0
-                |> Debug.log "h0"
     in
         WebGL.toHtmlWith
             [ WebGL.alpha True
