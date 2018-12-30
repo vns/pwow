@@ -84,7 +84,9 @@ update msg model =
         Tick dt ->
             ( { model
                 | clock = model.clock + dt
-                , clockEnabled = not ((isDone model.clock model.h0 && isDone model.clock model.h1)) || not (isDone model.clock model.theta)
+                , clockEnabled =
+                    not ((isDone model.clock model.h0 && isDone model.clock model.h1))
+                        || not (isDone model.clock model.theta)
               }
             , Cmd.none
             )
@@ -140,7 +142,7 @@ light =
 
 aPlane : Plane
 aPlane =
-    Plane (Vec3.normalize (vec3 -1.0 3.0 1.0)) (vec3 0.0 0.0 0.0)
+    Plane (Vec3.normalize (vec3 -1.0 3.5 1.0)) (vec3 0.0 0.0 0.0)
 
 
 anotherPlane : Plane
@@ -277,7 +279,6 @@ view model =
             { oldPlane
                 | normal = Mat4.transform (Mat4.makeRotate -theta Vec3.j) model.rotatingPlane.normal
             }
-                |> Debug.log "rotatingPlane"
     in
         div []
             [ ul []
@@ -295,7 +296,7 @@ view model =
                 , style "display" "block"
                 ]
               <|
-                List.map (\x -> x.object) <|
+                List.map .object <|
                     filter (\x -> x.step <= model.step) <|
                         [ -- object
                           --     Mesh.coordinateAxes

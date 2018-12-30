@@ -42,7 +42,7 @@ toMesh cone =
             2 * pi
 
         angle =
-            acos (Vec3.dot (Vec3.normalize cone.axis) (Vec3.normalize Vec3.j))
+            acos (Vec3.dot (Vec3.normalize cone.axis) Vec3.j)
 
         axis =
             if abs (angle - pi) <= epsilon then
@@ -148,6 +148,10 @@ focus1 cone plane =
                 (Vec3.scale sph.radius plane.normal)
 
 
+{-| A conic section with a given plane that results in an Ellipse. It is the
+user's responsibility to make sure the plane actually cuts through the cone.
+Based on the code from Geometric Tools for Computer Graphics (Schneider, Eberly, 2002.
+-}
 intersectPlane : Cone -> Plane -> Ellipse
 intersectPlane cone plane =
     let
@@ -214,6 +218,8 @@ circleSection cone point =
     }
 
 
+{-| Create a circle for the bottom of the cone.
+-}
 bottomSection : Cone -> Circle
 bottomSection cone =
     { normal = Vec3.j
