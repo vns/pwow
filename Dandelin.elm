@@ -41,6 +41,7 @@ type alias Model =
     , clockEnabled : Bool
     , step : Int
     , rotatingPlane : Plane
+    , spheresDone : Bool
     }
 
 
@@ -63,6 +64,7 @@ init _ =
       , h1 = static 0
       , theta = static 0
       , rotatingPlane = anotherPlane
+      , spheresDone = False
       }
     , Cmd.none
     )
@@ -82,14 +84,19 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Tick dt ->
-            ( { model
-                | clock = model.clock + dt
-                , clockEnabled =
-                    not ((isDone model.clock model.h0 && isDone model.clock model.h1))
-                        || not (isDone model.clock model.theta)
-              }
-            , Cmd.none
-            )
+            let
+                spheresDone =
+                    isDone model.clock model.h0 && isDone model.clock model.h1
+            in
+                ( { model
+                    | clock = model.clock + dt
+                    , spheresDone = spheresDone
+                    , clockEnabled =
+                        not spheresDone
+                            || not (isDone model.clock model.theta)
+                  }
+                , Cmd.none
+                )
 
         Step step ->
             let
@@ -103,6 +110,11 @@ update msg model =
 
                 newModel =
                     case step of
+                        0 ->
+                            { model
+                                | spheresDone = False
+                            }
+
                         1 ->
                             { model
                                 | h0 = animation model.clock |> from (h0max + 1) |> to h0max |> duration 4000
@@ -238,6 +250,7 @@ colors :
     , fillBlue : Vec4
     , fillGreen : Vec4
     , fillRed : Vec4
+    , transparent : Vec4
     }
 colors =
     { black = vec4 0.0 0.0 0.0 1
@@ -251,6 +264,7 @@ colors =
     , fillBlue = vec4 0.0 0.0 0.5 0.3
     , fillGreen = vec4 0.0 0.5 0.0 0.3
     , fillRed = vec4 0.3 0.0 0.0 0.5
+    , transparent = vec4 1.0 1.0 1.0 0.0
     }
 
 
@@ -356,13 +370,23 @@ view model =
 
                         -- FOCI
                         , SceneObject 1 <|
-                            object
+                            objectWith
+                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
                                 (Mesh.point <| .focus0 anEllipse)
-                                colors.black
+                                (if model.spheresDone then
+                                    colors.black
+                                 else
+                                    colors.transparent
+                                )
                         , SceneObject 1 <|
-                            object
+                            objectWith
+                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
                                 (Mesh.point <| .focus1 anEllipse)
-                                colors.black
+                                (if model.spheresDone then
+                                    colors.black
+                                 else
+                                    colors.transparent
+                                )
 
                         -- LINE SEGMENTS ON THE CONE
                         , SceneObject 2 <|
