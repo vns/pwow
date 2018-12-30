@@ -40,11 +40,10 @@ type alias Model =
     , theta : Animation
     , clockEnabled : Bool
     , step : Int
-    , rotatingPlane : Plane
     , pq1len : Animation
-    , pq1unit : Vec3
     , pf1len : Animation
-    , pf1unit : Vec3
+    , pq0len : Animation
+    , pf0len : Animation
     }
 
 
@@ -75,17 +74,51 @@ init _ =
         ( { clock = 0
           , clockEnabled = False
           , step = 0
-          , h0 = animation 0 |> from (h0max + 1) |> to h0max |> duration 3000
-          , h1 = animation 0 |> from 0.1 |> to h1max |> duration 3000
-          , theta = animation 0 |> from 0 |> to (2 * pi) |> duration 10000
-          , pq1unit = pq1 |> Vec3.normalize
-          , pf1unit = pf1 |> Vec3.normalize
-          , pq1len = animation 0 |> from 0 |> to (Vec3.length pq1) |> duration 2000
-          , pf1len = animation 0 |> from 0 |> to (Vec3.length pf1) |> duration 2000
-          , rotatingPlane = anotherPlane
+          , h0 = animations.h0 0
+          , h1 = animations.h1 0
+          , theta = animations.theta 0
+          , pq1len = animations.pq1len 0
+          , pf1len = animations.pf1len 0
+          , pq0len = animations.pq0len 0
+          , pf0len = animations.pf0len 0
           }
         , Cmd.none
         )
+
+
+animations :
+    { h0 : Clock -> Animation
+    , h1 : Clock -> Animation
+    , theta : Clock -> Animation
+    , pq1len : Clock -> Animation
+    , pf1len : Clock -> Animation
+    , pq0len : Clock -> Animation
+    , pf0len : Clock -> Animation
+    }
+animations =
+    let
+        h0max =
+            Vec3.sub aCone.vertex (.center <| Cone.sphere0 aCone aPlane)
+                |> Vec3.length
+
+        h1max =
+            Vec3.sub aCone.vertex (.center <| Cone.sphere1 aCone aPlane)
+                |> Vec3.length
+
+        ( pq1, pf1 ) =
+            upperTangents anotherPlane
+
+        ( pq0, pf0 ) =
+            lowerTangents anotherPlane
+    in
+        { h0 = \clock -> animation clock |> from (h0max + 1) |> to h0max |> duration 3000
+        , h1 = \clock -> animation clock |> from 0.1 |> to h1max |> duration 3000
+        , theta = \clock -> animation clock |> from 0 |> to (2 * pi) |> duration 10000
+        , pq1len = \clock -> animation clock |> from 0 |> to (Vec3.length pq1) |> duration 2000
+        , pf1len = \clock -> animation clock |> from 0 |> to (Vec3.length pf1) |> duration 2000
+        , pq0len = \clock -> animation clock |> from 0 |> to (Vec3.length pq0) |> duration 2000
+        , pf0len = \clock -> animation clock |> from 0 |> to (Vec3.length pf0) |> duration 2000
+        }
 
 
 subscriptions : Model -> Sub Msg
@@ -108,7 +141,12 @@ update msg model =
                     not (isDone model.clock model.h0)
                         || not (isDone model.clock model.h1)
                         || not (isDone model.clock model.theta)
-                        || not (isDone model.clock model.pq1len && isDone model.clock model.pf1len)
+                        || not
+                            (isDone model.clock model.pq1len
+                                && isDone model.clock model.pf1len
+                                && isDone model.clock model.pq0len
+                                && isDone model.clock model.pf0len
+                            )
               }
             , Cmd.none
             )
@@ -124,47 +162,40 @@ update msg model =
                         |> Vec3.length
 
                 ( pq1, pf1 ) =
-                    upperTangents model.rotatingPlane
+                    upperTangents anotherPlane
 
-                q0 =
-                    aTangentPoint0 model.rotatingPlane
-
-                f0 =
-                    .focus0 anEllipse
+                ( pq0, pf0 ) =
+                    lowerTangents anotherPlane
 
                 newModel =
                     case step of
                         1 ->
                             { model
-                                | h1 = animation model.clock |> from 0.1 |> to h1max |> duration 3000
-                                , clockEnabled = True
+                                | h1 = animations.h1 model.clock
                             }
 
                         2 ->
                             { model
-                                | h0 = animation model.clock |> from (h0max + 1) |> to h0max |> duration 3000
-                                , clockEnabled = True
+                                | h0 = animations.h0 model.clock
                             }
 
                         3 ->
                             { model
-                                | pq1len = animation model.clock |> from 0 |> to (pq1 |> Vec3.length) |> duration 2000
-                                , pf1len = animation model.clock |> from 0 |> to (pf1 |> Vec3.length) |> duration 2000
-                                , pq1unit = pq1 |> Vec3.normalize
-                                , pf1unit = pf1 |> Vec3.normalize
-                                , clockEnabled = True
+                                | pq1len = animations.pq1len model.clock
+                                , pf1len = animations.pf1len model.clock
+                                , pq0len = animations.pq0len model.clock
+                                , pf0len = animations.pf0len model.clock
                             }
 
-                        5 ->
+                        4 ->
                             { model
-                                | theta = animation model.clock |> from 0 |> to (2 * pi) |> duration 10000
-                                , clockEnabled = True
+                                | theta = animations.theta model.clock
                             }
 
                         _ ->
                             model
             in
-                ( { newModel | step = step }, Cmd.none )
+                ( { newModel | step = step, clockEnabled = True }, Cmd.none )
 
 
 camera : Float -> Mat4
@@ -273,6 +304,26 @@ upperTangents rotatingPlane =
         ( pq1, pf1 )
 
 
+lowerTangents rotatingPlane =
+    let
+        p =
+            aPointOnTheEllipse rotatingPlane
+
+        q0 =
+            aTangentPoint0 rotatingPlane
+
+        pq0 =
+            Vec3.sub q0 p
+
+        f0 =
+            .focus0 anEllipse
+
+        pf0 =
+            Vec3.sub f0 p
+    in
+        ( pq0, pf0 )
+
+
 objectWith : List Setting -> WebGL.Mesh Attributes -> Vec4 -> WebGL.Entity
 objectWith settings mesh color =
     WebGL.entityWith
@@ -336,7 +387,6 @@ view model =
              else
                 getTo model.h1
             )
-                |> Debug.log "h1"
 
         h0 =
             (if model.step == 2 then
@@ -344,7 +394,11 @@ view model =
              else
                 getTo model.h0
             )
-                |> Debug.log "h0"
+
+        rotatingPlane =
+            { anotherPlane
+                | normal = Mat4.transform (Mat4.makeRotate -theta Vec3.j) anotherPlane.normal
+            }
 
         ( pq1len, pf1len ) =
             if model.step == 3 then
@@ -352,26 +406,31 @@ view model =
                 , animate model.clock model.pf1len
                 )
             else
-                ( getTo model.pq1len
-                , getTo model.pf1len
-                )
+                upperTangents rotatingPlane
+                    |> \( pq1, pf1 ) -> ( Vec3.length pq1, Vec3.length pf1 )
 
         ( pq1unit, pf1unit ) =
-            ( model.pq1unit, model.pf1unit )
+            upperTangents rotatingPlane
+                |> \( pq1, pf1 ) -> ( Vec3.normalize pq1, Vec3.normalize pf1 )
+
+        ( pq0len, pf0len ) =
+            if model.step == 3 then
+                ( animate model.clock model.pq0len
+                , animate model.clock model.pf0len
+                )
+            else
+                lowerTangents rotatingPlane
+                    |> \( pq0, pf0 ) -> ( Vec3.length pq0, Vec3.length pf0 )
+
+        ( pq0unit, pf0unit ) =
+            lowerTangents rotatingPlane
+                |> \( pq0, pf0 ) -> ( Vec3.normalize pq0, Vec3.normalize pf0 )
 
         theta =
-            if model.step == 5 then
+            if model.step == 4 then
                 animate model.clock model.theta
             else
                 getTo model.theta
-
-        oldPlane =
-            model.rotatingPlane
-
-        rotatingPlane =
-            { oldPlane
-                | normal = Mat4.transform (Mat4.makeRotate -theta Vec3.j) model.rotatingPlane.normal
-            }
     in
         div []
             [ ul []
@@ -380,7 +439,6 @@ view model =
                 , li [] [ a [ onClick (Step 2) ] [ text "step 2" ] ]
                 , li [] [ a [ onClick (Step 3) ] [ text "step 3" ] ]
                 , li [] [ a [ onClick (Step 4) ] [ text "step 4" ] ]
-                , li [] [ a [ onClick (Step 5) ] [ text "step 5" ] ]
                 ]
             , WebGL.toHtmlWith
                 [ WebGL.alpha True
@@ -471,9 +529,12 @@ view model =
                                 )
 
                         -- LINE SEGMENTS IN THE CONE
-                        , SceneObject 5 <|
+                        , SceneObject 3 <|
                             object
-                                (Mesh.lineSegment (aPointOnTheEllipse rotatingPlane) (.focus0 anEllipse))
+                                (Mesh.lineSegment
+                                    (aPointOnTheEllipse rotatingPlane)
+                                    (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pf0len pf0unit)
+                                )
                                 colors.strokeBlue
                         , SceneObject 3 <|
                             object
@@ -501,50 +562,78 @@ view model =
                                 colors.bottomGray
 
                         -- TANGENT POINTS
-                        , SceneObject 5 <|
-                            object
+                        , SceneObject 3 <|
+                            objectWith
+                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
                                 (Mesh.point (aTangentPoint0 rotatingPlane))
-                                colors.black
+                                (if pq0len == getTo model.pq0len then
+                                    colors.black
+                                 else if not (model.step == 3) then
+                                    colors.black
+                                 else
+                                    colors.transparent
+                                )
                         , SceneObject 3 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
                                 (Mesh.point (aTangentPoint1 rotatingPlane))
                                 (if pq1len == getTo model.pq1len then
                                     colors.black
+                                 else if not (model.step == 3) then
+                                    colors.black
                                  else
                                     colors.transparent
                                 )
 
                         -- CIRCLES
-                        , SceneObject 5 <|
+                        , SceneObject 2 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.one ]
                                 (Mesh.circle (Cone.circleSection aCone (aTangentPoint0 rotatingPlane)) |> Mesh.fill)
-                                colors.fillBlue
-                        , SceneObject 5 <|
+                                (if h0 == getTo model.h0 then
+                                    colors.fillBlue
+                                 else
+                                    colors.transparent
+                                )
+                        , SceneObject 2 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.one ]
                                 (Mesh.circle (Cone.circleSection aCone (aTangentPoint0 rotatingPlane)) |> Mesh.stroke)
-                                colors.strokeBlue
-                        , SceneObject 5 <|
+                                (if h0 == getTo model.h0 then
+                                    colors.strokeBlue
+                                 else
+                                    colors.transparent
+                                )
+                        , SceneObject 1 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.one ]
                                 (Mesh.circle (Cone.circleSection aCone (aTangentPoint1 rotatingPlane)) |> Mesh.fill)
-                                colors.fillGreen
-                        , SceneObject 5 <|
+                                (if h1 == getTo model.h1 then
+                                    colors.fillGreen
+                                 else
+                                    colors.transparent
+                                )
+                        , SceneObject 1 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.one ]
                                 (Mesh.circle (Cone.circleSection aCone (aTangentPoint1 rotatingPlane)) |> Mesh.stroke)
-                                colors.strokeGreen
+                                (if h1 == getTo model.h1 then
+                                    colors.strokeGreen
+                                 else
+                                    colors.transparent
+                                )
                         , SceneObject 3 <|
                             object
                                 (Mesh.point (aPointOnTheEllipse rotatingPlane))
                                 colors.black
 
                         -- LINE SEGMENTS ON THE CONE
-                        , SceneObject 5 <|
+                        , SceneObject 3 <|
                             object
-                                (Mesh.lineSegment (aPointOnTheEllipse rotatingPlane) (aTangentPoint0 rotatingPlane))
+                                (Mesh.lineSegment
+                                    (aPointOnTheEllipse rotatingPlane)
+                                    (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pq0len pq0unit)
+                                )
                                 colors.strokeBlue
                         , SceneObject 3 <|
                             object
