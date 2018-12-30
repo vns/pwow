@@ -164,8 +164,8 @@ anEllipse =
     Cone.intersectPlane aCone aPlane
 
 
-animatedSphere : Sphere -> Float -> Sphere
-animatedSphere sphere h =
+animatedSphere : Float -> Sphere -> Sphere
+animatedSphere h sphere =
     let
         cone =
             aCone
@@ -302,20 +302,20 @@ view model =
                           --     Mesh.coordinateAxes
                           --     colors.black
                           -- SPHERE CENTERS
-                          SceneObject 0 <|
+                          SceneObject 1 <|
                             object
-                                (Mesh.point <| .center <| Cone.sphere0 aCone aPlane)
+                                (Mesh.point <| .center <| animatedSphere h0 <| Cone.sphere0 aCone aPlane)
                                 colors.black
-                        , SceneObject 0 <|
+                        , SceneObject 1 <|
                             object
-                                (Mesh.point <| .center <| Cone.sphere1 aCone aPlane)
+                                (Mesh.point <| .center <| animatedSphere h1 <| Cone.sphere1 aCone aPlane)
                                 colors.black
 
                         -- LOWER SPHERE
                         , SceneObject 1 <|
                             objectWith
                                 [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.bigSphere (animatedSphere (Cone.sphere0 aCone aPlane) h0))
+                                (Mesh.bigSphere <| animatedSphere h0 <| Cone.sphere0 aCone aPlane)
                                 colors.sphereGray
 
                         -- INTERSECTING PLANE
@@ -351,7 +351,7 @@ view model =
                                 , DepthTest.less { write = False, near = 0.0, far = 1.0 }
                                 ]
                                 -- (Mesh.sphere (Cone.sphere1 aCone aPlane))
-                                (Mesh.sphere (animatedSphere (Cone.sphere1 aCone aPlane) h1))
+                                (Mesh.sphere <| animatedSphere h1 <| Cone.sphere1 aCone aPlane)
                                 colors.sphereGray
 
                         -- FOCI
