@@ -1,24 +1,10 @@
 - title: the pythagorean theorem
-  file: pythagorean.js
-  module: Pythagorean
   slug: the-pythagorean-theorem
 - title: viviani's theorem
-  file: viviani.js
-  module: Viviani
   slug: vivianis-theorem
-- title: a sum of odd integers
-  file: oddintegers.js
-  module: OddIntegers
-  slug: a-sum-of-odd-integers
-- title: a finite conic section
-  file: dandelin.js
-  module: Dandelin
-  slug: a-finite-conic-section
-- title: a mobius band
-  file: mobius
-  module: Mobius
-  slug: a-mobius-band
-- title: a cantor set
-  file: cantor.js
-  module: Cantor
-  slug: a-cantor-set
+- title: sum of odd integers
+  slug: sum-of-odd-integers
+- title: finite conic section
+  slug: finite-conic-section
+- title: möbius strip
+  slug: mobius-strip
