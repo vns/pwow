@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ page.title }}</title>
+  <link rel="stylesheet" href="/elements.css">
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+  <script type="text/javascript" src="/dist/{{ page.file }}"></script>
+</head>
+<body>
+    <div class="header">
+        <nav>
+            <ul>
+                <li><a class="active" href="">math creations</a></li>
+            </ul>
+        </nav>
+        <div class="definition">
+            {{ page.definition }}
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="sidebar">
+            <ul>
+                {% for item in site.data.items %}
+                {% assign class = nil %}
+                {% if page.url contains item.slug %}
+                    {% assign class = "active" %}
+                {% endif %}
+
+                    <li><a class="{{ class }}" href="/{{ item.slug }}/">{{ item.title }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <main id="elm">
+        </main>
+        <script>
+            var app = Elm.Main.init({
+                node: document.getElementById('elm')
+            });
+        </script>
+    </div>
+</body>
+</html>

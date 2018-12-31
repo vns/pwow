@@ -1,4 +1,4 @@
-module Cantor exposing (main)
+module Main exposing (main)
 
 import Browser
 import Html

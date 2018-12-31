@@ -1,2 +1,3 @@
 elm-stuff
-main.js
+_site
+dist/*.js
