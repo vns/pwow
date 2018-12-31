@@ -378,8 +378,39 @@ type alias SceneObject =
     }
 
 
+stepView : Int -> Int -> Html Msg
+stepView aStep currentStep =
+    let
+        stepClass =
+            "step"
+                ++ if aStep == currentStep then
+                    " active"
+                   else
+                    ""
+    in
+        span [ onClick (Step aStep), class stepClass ] []
+
+
 view : Model -> Html Msg
 view model =
+    div
+        [ class "presentation" ]
+        [ div [ class "steps" ]
+            [ stepView 0 model.step
+            , stepView 1 model.step
+            , stepView 2 model.step
+            , stepView 3 model.step
+            , stepView 4 model.step
+            ]
+        , div
+            [ class "canvas-container"
+            ]
+            [ mainCanvas model ]
+        ]
+
+
+mainCanvas : Model -> Html Msg
+mainCanvas model =
     let
         h1 =
             (if model.step == 1 then
@@ -432,216 +463,207 @@ view model =
             else
                 getTo model.theta
     in
-        div []
-            [ ul []
-                [ li [] [ a [ onClick (Step 0) ] [ text "step 0" ] ]
-                , li [] [ a [ onClick (Step 1) ] [ text "step 1" ] ]
-                , li [] [ a [ onClick (Step 2) ] [ text "step 2" ] ]
-                , li [] [ a [ onClick (Step 3) ] [ text "step 3" ] ]
-                , li [] [ a [ onClick (Step 4) ] [ text "step 4" ] ]
-                ]
-            , WebGL.toHtmlWith
-                [ WebGL.alpha True
-                , WebGL.antialias
-                , WebGL.depth 1
-                ]
-                [ width 700
-                , height 700
-                , style "display" "block"
-                ]
-              <|
-                List.map .object <|
-                    filter (\x -> x.step <= model.step) <|
-                        [ -- object
-                          --     Mesh.coordinateAxes
-                          --     colors.black
-                          -- SPHERE CENTERS
-                          SceneObject 2 <|
-                            object
-                                (Mesh.point <| .center <| animatedSphere h0 <| Cone.sphere0 aCone aPlane)
-                                colors.black
-                        , SceneObject 1 <|
-                            object
-                                (Mesh.point <| .center <| animatedSphere h1 <| Cone.sphere1 aCone aPlane)
-                                colors.black
-
-                        -- LOWER SPHERE
-                        , SceneObject 2 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.bigSphere <| animatedSphere h0 <| Cone.sphere0 aCone aPlane)
-                                colors.sphereGray
-
-                        -- INTERSECTING PLANE
-                        , SceneObject 0 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-                                ]
-                                (Mesh.plane aPlane)
-                                colors.planeGray
-
-                        -- ELLIPSE
-                        , SceneObject 0 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
-                                (Mesh.ellipse anEllipse |> Mesh.fill)
-                                colors.fillRed
-                        , SceneObject 0 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
-                                (Mesh.ellipse anEllipse |> Mesh.stroke)
-                                colors.strokeRed
-
-                        -- , object
-                        --     (Mesh.line <| Line anEllipse.center anEllipse.majorAxis)
-                        --     colors.black
-                        -- , object
-                        --     (Mesh.line <| Line anEllipse.center anEllipse.minorAxis)
-                        --     colors.black
-                        -- UPPER SPHERE
-                        , SceneObject 1 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.one
-                                , DepthTest.less { write = False, near = 0.0, far = 1.0 }
-                                ]
-                                -- (Mesh.sphere (Cone.sphere1 aCone aPlane))
-                                (Mesh.sphere <| animatedSphere h1 <| Cone.sphere1 aCone aPlane)
-                                colors.sphereGray
-
-                        -- FOCI
-                        , SceneObject 1 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
-                                (Mesh.point <| .focus1 anEllipse)
-                                (if h1 == getTo model.h1 then
-                                    colors.black
-                                 else
-                                    colors.transparent
-                                )
-                        , SceneObject 2 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
-                                (Mesh.point <| .focus0 anEllipse)
-                                (if h0 == getTo model.h0 then
-                                    colors.black
-                                 else
-                                    colors.transparent
-                                )
-
-                        -- LINE SEGMENTS IN THE CONE
-                        , SceneObject 3 <|
-                            object
-                                (Mesh.lineSegment
-                                    (aPointOnTheEllipse rotatingPlane)
-                                    (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pf0len pf0unit)
-                                )
-                                colors.strokeBlue
-                        , SceneObject 3 <|
-                            object
-                                (Mesh.lineSegment
-                                    (aPointOnTheEllipse rotatingPlane)
-                                    -- (.focus1 anEllipse)
-                                    (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pf1len pf1unit)
-                                )
-                                colors.strokeGreen
-
-                        -- THE CONE
-                        , SceneObject 0 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-                                , DepthTest.less { write = False, near = 0.0, far = 1.0 }
-                                , WebGL.Settings.cullFace WebGL.Settings.back
-                                ]
-                                (Mesh.cone aCone)
-                                colors.coneGray
-                        , SceneObject 0 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
-                                ]
-                                (Mesh.circle (Cone.bottomSection aCone) |> Mesh.fill)
-                                colors.bottomGray
-
-                        -- TANGENT POINTS
-                        , SceneObject 3 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
-                                (Mesh.point (aTangentPoint0 rotatingPlane))
-                                (if pq0len == getTo model.pq0len then
-                                    colors.black
-                                 else if not (model.step == 3) then
-                                    colors.black
-                                 else
-                                    colors.transparent
-                                )
-                        , SceneObject 3 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
-                                (Mesh.point (aTangentPoint1 rotatingPlane))
-                                (if pq1len == getTo model.pq1len then
-                                    colors.black
-                                 else if not (model.step == 3) then
-                                    colors.black
-                                 else
-                                    colors.transparent
-                                )
-
-                        -- CIRCLES
-                        , SceneObject 2 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.circle (Cone.circleSection aCone (aTangentPoint0 rotatingPlane)) |> Mesh.fill)
-                                (if h0 == getTo model.h0 then
-                                    colors.fillBlue
-                                 else
-                                    colors.transparent
-                                )
-                        , SceneObject 2 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.circle (Cone.circleSection aCone (aTangentPoint0 rotatingPlane)) |> Mesh.stroke)
-                                (if h0 == getTo model.h0 then
-                                    colors.strokeBlue
-                                 else
-                                    colors.transparent
-                                )
-                        , SceneObject 1 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.circle (Cone.circleSection aCone (aTangentPoint1 rotatingPlane)) |> Mesh.fill)
-                                (if h1 == getTo model.h1 then
-                                    colors.fillGreen
-                                 else
-                                    colors.transparent
-                                )
-                        , SceneObject 1 <|
-                            objectWith
-                                [ Blend.add Blend.srcAlpha Blend.one ]
-                                (Mesh.circle (Cone.circleSection aCone (aTangentPoint1 rotatingPlane)) |> Mesh.stroke)
-                                (if h1 == getTo model.h1 then
-                                    colors.strokeGreen
-                                 else
-                                    colors.transparent
-                                )
-                        , SceneObject 3 <|
-                            object
-                                (Mesh.point (aPointOnTheEllipse rotatingPlane))
-                                colors.black
-
-                        -- LINE SEGMENTS ON THE CONE
-                        , SceneObject 3 <|
-                            object
-                                (Mesh.lineSegment
-                                    (aPointOnTheEllipse rotatingPlane)
-                                    (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pq0len pq0unit)
-                                )
-                                colors.strokeBlue
-                        , SceneObject 3 <|
-                            object
-                                (Mesh.lineSegment
-                                    (aPointOnTheEllipse rotatingPlane)
-                                    -- (aTangentPoint1 rotatingPlane)
-                                    (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pq1len pq1unit)
-                                )
-                                colors.strokeGreen
-                        ]
+        WebGL.toHtmlWith
+            [ WebGL.alpha True
+            , WebGL.antialias
+            , WebGL.depth 1
             ]
+            [ width 700
+            , height 700
+            , style "display" "block"
+            ]
+        <|
+            List.map .object <|
+                filter (\x -> x.step <= model.step) <|
+                    [ -- object
+                      --     Mesh.coordinateAxes
+                      --     colors.black
+                      -- SPHERE CENTERS
+                      SceneObject 2 <|
+                        object
+                            (Mesh.point <| .center <| animatedSphere h0 <| Cone.sphere0 aCone aPlane)
+                            colors.black
+                    , SceneObject 1 <|
+                        object
+                            (Mesh.point <| .center <| animatedSphere h1 <| Cone.sphere1 aCone aPlane)
+                            colors.black
+
+                    -- LOWER SPHERE
+                    , SceneObject 2 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.one ]
+                            (Mesh.bigSphere <| animatedSphere h0 <| Cone.sphere0 aCone aPlane)
+                            colors.sphereGray
+
+                    -- INTERSECTING PLANE
+                    , SceneObject 0 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+                            ]
+                            (Mesh.plane aPlane)
+                            colors.planeGray
+
+                    -- ELLIPSE
+                    , SceneObject 0 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+                            (Mesh.ellipse anEllipse |> Mesh.fill)
+                            colors.fillRed
+                    , SceneObject 0 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+                            (Mesh.ellipse anEllipse |> Mesh.stroke)
+                            colors.strokeRed
+
+                    -- , object
+                    --     (Mesh.line <| Line anEllipse.center anEllipse.majorAxis)
+                    --     colors.black
+                    -- , object
+                    --     (Mesh.line <| Line anEllipse.center anEllipse.minorAxis)
+                    --     colors.black
+                    -- UPPER SPHERE
+                    , SceneObject 1 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.one
+                            , DepthTest.less { write = False, near = 0.0, far = 1.0 }
+                            ]
+                            -- (Mesh.sphere (Cone.sphere1 aCone aPlane))
+                            (Mesh.sphere <| animatedSphere h1 <| Cone.sphere1 aCone aPlane)
+                            colors.sphereGray
+
+                    -- FOCI
+                    , SceneObject 1 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+                            (Mesh.point <| .focus1 anEllipse)
+                            (if h1 == getTo model.h1 then
+                                colors.black
+                             else
+                                colors.transparent
+                            )
+                    , SceneObject 2 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+                            (Mesh.point <| .focus0 anEllipse)
+                            (if h0 == getTo model.h0 then
+                                colors.black
+                             else
+                                colors.transparent
+                            )
+
+                    -- LINE SEGMENTS IN THE CONE
+                    , SceneObject 3 <|
+                        object
+                            (Mesh.lineSegment
+                                (aPointOnTheEllipse rotatingPlane)
+                                (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pf0len pf0unit)
+                            )
+                            colors.strokeBlue
+                    , SceneObject 3 <|
+                        object
+                            (Mesh.lineSegment
+                                (aPointOnTheEllipse rotatingPlane)
+                                -- (.focus1 anEllipse)
+                                (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pf1len pf1unit)
+                            )
+                            colors.strokeGreen
+
+                    -- THE CONE
+                    , SceneObject 0 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+                            , DepthTest.less { write = False, near = 0.0, far = 1.0 }
+                            , WebGL.Settings.cullFace WebGL.Settings.back
+                            ]
+                            (Mesh.cone aCone)
+                            colors.coneGray
+                    , SceneObject 0 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha
+                            ]
+                            (Mesh.circle (Cone.bottomSection aCone) |> Mesh.fill)
+                            colors.bottomGray
+
+                    -- TANGENT POINTS
+                    , SceneObject 3 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+                            (Mesh.point (aTangentPoint0 rotatingPlane))
+                            (if pq0len == getTo model.pq0len then
+                                colors.black
+                             else if not (model.step == 3) then
+                                colors.black
+                             else
+                                colors.transparent
+                            )
+                    , SceneObject 3 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.oneMinusSrcAlpha ]
+                            (Mesh.point (aTangentPoint1 rotatingPlane))
+                            (if pq1len == getTo model.pq1len then
+                                colors.black
+                             else if not (model.step == 3) then
+                                colors.black
+                             else
+                                colors.transparent
+                            )
+
+                    -- CIRCLES
+                    , SceneObject 2 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.one ]
+                            (Mesh.circle (Cone.circleSection aCone (aTangentPoint0 rotatingPlane)) |> Mesh.fill)
+                            (if h0 == getTo model.h0 then
+                                colors.fillBlue
+                             else
+                                colors.transparent
+                            )
+                    , SceneObject 2 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.one ]
+                            (Mesh.circle (Cone.circleSection aCone (aTangentPoint0 rotatingPlane)) |> Mesh.stroke)
+                            (if h0 == getTo model.h0 then
+                                colors.strokeBlue
+                             else
+                                colors.transparent
+                            )
+                    , SceneObject 1 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.one ]
+                            (Mesh.circle (Cone.circleSection aCone (aTangentPoint1 rotatingPlane)) |> Mesh.fill)
+                            (if h1 == getTo model.h1 then
+                                colors.fillGreen
+                             else
+                                colors.transparent
+                            )
+                    , SceneObject 1 <|
+                        objectWith
+                            [ Blend.add Blend.srcAlpha Blend.one ]
+                            (Mesh.circle (Cone.circleSection aCone (aTangentPoint1 rotatingPlane)) |> Mesh.stroke)
+                            (if h1 == getTo model.h1 then
+                                colors.strokeGreen
+                             else
+                                colors.transparent
+                            )
+                    , SceneObject 3 <|
+                        object
+                            (Mesh.point (aPointOnTheEllipse rotatingPlane))
+                            colors.black
+
+                    -- LINE SEGMENTS ON THE CONE
+                    , SceneObject 3 <|
+                        object
+                            (Mesh.lineSegment
+                                (aPointOnTheEllipse rotatingPlane)
+                                (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pq0len pq0unit)
+                            )
+                            colors.strokeBlue
+                    , SceneObject 3 <|
+                        object
+                            (Mesh.lineSegment
+                                (aPointOnTheEllipse rotatingPlane)
+                                -- (aTangentPoint1 rotatingPlane)
+                                (Vec3.add (aPointOnTheEllipse rotatingPlane) <| Vec3.scale pq1len pq1unit)
+                            )
+                            colors.strokeGreen
+                    ]
