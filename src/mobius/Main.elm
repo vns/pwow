@@ -86,7 +86,7 @@ camera ratio =
             vec3 0 0 10
 
         center =
-            vec3 0 0 0
+            vec3 0 -1 0
     in
         (Mat4.makeLookAt eye center Vec3.j)
             |> Mat4.mul (Mat4.makePerspective 45 ratio 0.01 100)

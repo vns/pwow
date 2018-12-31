@@ -24,7 +24,7 @@ gap =
 
 hline : Color -> Float -> Collage msg
 hline color len =
-    rectangle len 10 |> filled (uniform Color.blue)
+    rectangle len 10 |> filled (uniform blue)
 
 
 cantor : Float -> Int -> Collage msg
@@ -51,10 +51,10 @@ view model =
         cantorRow =
             \n ->
                 [ gap
-                , cantor 1200 n
+                , cantor 700 n
                 ]
     in
-        List.range 0 6
+        List.range 0 5
             |> List.map cantorRow
             |> List.concat
             |> vertical
