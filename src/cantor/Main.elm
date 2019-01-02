@@ -7,6 +7,7 @@ import Collage exposing (..)
 import Collage.Layout exposing (..)
 import Collage.Render exposing (svg)
 import Color exposing (..)
+import List exposing (map, range, concat)
 
 
 main =
@@ -22,40 +23,36 @@ gap =
     spacer 20 10
 
 
-hline : Color -> Float -> Collage msg
-hline color len =
-    rectangle len 10 |> filled (uniform blue)
+rect : Color -> Float -> Collage msg
+rect color len =
+    rectangle len 10 |> filled (uniform color)
 
 
 cantor : Float -> Int -> Collage msg
 cantor len depth =
     case depth of
         0 ->
-            hline black len
+            rect blue len
 
         _ ->
-            let
-                aLine =
-                    cantor (len / 3) (depth - 1)
-            in
-                [ aLine
-                , spacer (len / 3) 0
-                , aLine
-                ]
-                    |> horizontal
-                    |> center
+            [ cantor (len / 3) (depth - 1)
+            , spacer (len / 3) 0
+            , cantor (len / 3) (depth - 1)
+            ]
+                |> horizontal
+                |> center
 
 
 view model =
     let
-        cantorRow =
+        row =
             \n ->
                 [ gap
                 , cantor 700 n
                 ]
     in
-        List.range 0 5
-            |> List.map cantorRow
-            |> List.concat
+        range 0 5
+            |> map row
+            |> concat
             |> vertical
             |> svg
