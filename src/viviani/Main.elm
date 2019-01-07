@@ -9,7 +9,6 @@ import Svg.Attributes exposing (..)
 import Animation as Anim
 import List exposing (map, range)
 import Json.Decode as Decode
-import Debug
 
 
 main =
@@ -421,7 +420,6 @@ lineCenter { start, end } =
              else
                 start.x
             )
-                |> Debug.log "centerX"
 
         centerY =
             (if start.y > end.y then
@@ -431,7 +429,6 @@ lineCenter { start, end } =
              else
                 start.y
             )
-                |> Debug.log "centerY"
     in
         { x = centerX, y = centerY }
 
@@ -481,7 +478,6 @@ equilateralFromLine line =
 
         side =
             dist line.start line.end
-                |> Debug.log "side"
 
         height =
             (sqrt (side * side - (side * side) / 4))
