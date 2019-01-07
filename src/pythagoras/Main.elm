@@ -282,7 +282,7 @@ stepView aStep currentStep =
                    else
                     ""
     in
-        span [ onClick (Step aStep), Attr.class stepClass ] [ Html.text " o " ]
+        span [ onClick (Step aStep), Attr.class stepClass ] [ Html.text " " ]
 
 
 mainCanvas : Model -> Html.Html msg

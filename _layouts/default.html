@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>{{ page.title }}</title>
-  <link rel="stylesheet" href="/elements.css">
+  <link rel="stylesheet" href="{{ site.root }}/elements.css">
   <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
-  <script type="text/javascript" src="/dist/{{ page.file }}"></script>
+    <script type="text/javascript" src="{{ site.root }}/dist/{{ page.file }}"></script>
 </head>
 <body>
     <div class="header">
@@ -28,7 +28,7 @@
                     {% assign class = "active" %}
                 {% endif %}
 
-                    <li><a class="{{ class }}" href="/{{ item.slug }}/">{{ item.title }}</a></li>
+                <li><a class="{{ class }}" href="/pwow/{{ item.slug }}/">{{ item.title }}</a></li>
                 {% endfor %}
             </ul>
         </div>
