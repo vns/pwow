@@ -28,7 +28,7 @@
                     {% assign class = "active" %}
                 {% endif %}
 
-                <li><a class="{{ class }}" href="/pwow/{{ item.slug }}/">{{ item.title }}</a></li>
+                <li><a class="{{ class }}" href="{{ siter.root }}/{{ item.slug }}/">{{ item.title }}</a></li>
                 {% endfor %}
             </ul>
         </div>
